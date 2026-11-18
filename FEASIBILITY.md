@@ -1,6 +1,6 @@
 # OpenCode 2 Desktop 功能可行性审计
 
-2026-11-18 · macOS · 宿主 **2.3.2**。本机应用 Info.plist 与官方版本对应，Git 标签指向 `c0ad18b402eb2827fc1ee71c171b1177b3fc02d1`。以下结论来自读取这次发布的源码、组件调用点、测试和社区原作者资料。当前七项均处于预研阶段。[官方发布](https://github.com/anomalyco/opencode/releases/tag/v2.3.2) · [GUI 手册](https://opencode.ai/docs/build/plugins/gui)
+2026-11-18 · macOS · 宿主 **2.3.2**。本机应用 Info.plist 与官方版本对应，Git 标签指向 `c0ad18b402eb2827fc1ee71c171b1177b3fc02d1`。以下结论来自读取这次发布的源码、组件调用点、测试和社区原作者资料。代码块插件的实现范围与试用结果见版本记录。[02 验收记录](projects/code-block-enhancer/README.md) · [官方发布](https://github.com/anomalyco/opencode/releases/tag/v2.3.2) · [GUI 手册](https://opencode.ai/docs/build/plugins/gui)
 
 | 功能 | 2.3.2 的判断 | 建议及工作量¹ |
 |---|---|---|
@@ -16,7 +16,7 @@
 
 ## 02 · Code Block Enhancer
 
-`createCodeBlocks` 按小写语言索引，首个匹配 renderer 获胜；SDK 不展开别名或通配符。宿主只在闭合围栏后挂载扩展，流中及截断时保留原生高亮。插件能取到代码、语言和会话；没有可靠的源文件路径字段。宿主保留复制按钮及附加动作，`ctx.ui.Code` 可在自定义 renderer 内复用纯代码渲染。此扩展同样可能命中工具输出和会话内的文件预览。[围栏契约][reg] · [实际分派][render] · [宿主组件][hostapi]
+`createCodeBlocks` 按小写语言索引，首个匹配 renderer 获胜。宿主判定围栏完成后挂载扩展，停止生成或从历史重载时也可能将未闭合的围栏判为完成。插件能取到代码、语言和会话。宿主保留复制按钮及附加动作，`ctx.ui.Code` 可在自定义 renderer 内复用纯代码渲染。此扩展同样可能命中工具输出和会话内的文件预览。[围栏契约][reg] · [实际分派][render] · [宿主组件][hostapi]
 
 原生高亮器为 @pierre/highlights，OpenCodeTheme 将词法角色映射到 CSS 变量，可复用现有语言支持与流式 tokenizer。[高亮主题映射](https://github.com/anomalyco/opencode/blob/c0ad18b402eb2827fc1ee71c171b1177b3fc02d1/packages/ui/src/context/highlight-theme.tsx)
 

@@ -1,10 +1,11 @@
 # OpenCode Desktop UX
 
-面向 macOS OpenCode Desktop 2.3.2 的模块化界面增强项目。当前公开七项功能的需求、源码审计、工程设计和各项目的首版验收标准。七项均在预研阶段。
+面向 macOS OpenCode Desktop 2.3.2 的模块化界面增强项目。代码块插件 02 已完成 `0.1.0-alpha.3` 本机试用，下一阶段优先开发插件 06 的会话缓存命中率与 TPS 监控。
 
 - [功能需求与开发顺序](REQUIREMENTS.md)
 - [逐项可行性与源码依据](FEASIBILITY.md)
 - [模块边界、共享侧栏和兼容性设计](DESIGN.md)
+- [下一阶段计划 · 会话缓存命中率与 TPS](SESSION_METRICS_PLAN.md)
 
 ## 项目索引
 
@@ -12,7 +13,7 @@
 
 | 编号 | 项目与首版验收 | 文档来源提交 |
 |---|---|---|
-| 02 | [Code Block Enhancer](projects/code-block-enhancer/README.md) | `2a97173` |
+| 02 | [Code Block Enhancer · 0.1.0-alpha.3](projects/code-block-enhancer/README.md) | `ea1b8d8` |
 | 03 | [Markdown Presentation Enhancer](projects/markdown-presentation/README.md) | `2c692be` |
 | 04 | [Compact Auto Collapse](projects/compact-auto-collapse/README.md) | `c3a17f9` |
 | 05 | [Execution Timeline Auto Collapse](projects/execution-timeline/README.md) | `34ca57d` |

@@ -1,15 +1,15 @@
 # 仓库与集成设计
 
-各插件在独立 Git 仓库开发、测试与发布。本协调仓汇集功能范围、接口设计和兼容性验证工具。projects 目录收录预研阶段的文档快照，版本对应关系见首页。各项目采用 MIT 许可。
+各插件在独立 Git 仓库开发、测试与发布。本协调仓汇集功能范围、接口设计和兼容性验证工具。projects 目录收录各插件的范围与阶段记录，版本对应关系见首页。各项目采用 MIT 许可。
 
 | 仓库 | 所有权与阶段 |
 |---|---|
 | ux-integration | 源码证据、版本组合、跨插件验收与复跑入口 |
-| code-block-enhancer | 02 · 完整围栏的结构和交互。第一批后续 |
+| code-block-enhancer | 02 · 代码围栏顶栏、复制与逐块换行。alpha.3 已完成本机试用 |
 | markdown-presentation | 03 · assistant 正文的排版。第一批后续 |
 | compact-auto-collapse | 04 · 压缩摘要。第三批，先评估原生 |
 | execution-timeline | 05 · 回合中间活动的展示。第三批 |
-| session-metrics | 06 · 会话统计、共享监控标签。第二批 |
+| session-metrics | 06 · 会话统计、共享监控标签。下一项优先开发，详见[缓存命中率与 TPS 计划](SESSION_METRICS_PLAN.md) |
 | provider-quota | 07 · 套餐额度来源、降级与独立展示。第二批 |
 | file-review-enhancer | 08 · 文件审阅缺口。第四批 |
 
