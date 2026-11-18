@@ -1,0 +1,49 @@
+.ocx-session-metrics {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 16px;
+  overflow: auto;
+  font: inherit;
+  font-size: 13px;
+  color: var(--v2-text-text-base);
+  background: var(--v2-background-bg-base);
+  font-variant-numeric: tabular-nums;
+}
+.ocx-session-metrics * { box-sizing: border-box; }
+.ocx-session-metrics [hidden] { display: none; }
+.ocx-metrics-model { display: grid; gap: 3px; margin: 0 0 14px; overflow-wrap: anywhere; }
+.ocx-metrics-model span, .ocx-session-metrics dt, .ocx-metrics-filters label > span,
+.ocx-session-metrics [role=status] { color: var(--v2-text-text-muted); }
+.ocx-metrics-model strong { font-size: 14px; font-weight: 600; }
+.ocx-metrics-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; gap: 8px; }
+.ocx-metrics-stats > div, .ocx-session-metrics details {
+  padding: 10px 12px;
+  background: var(--v2-background-bg-layer-01);
+  border: 1px solid var(--v2-border-border-muted);
+  border-radius: 8px;
+}
+.ocx-metrics-stats dd { margin: 3px 0; font-size: 21px; line-height: 1.25; font-weight: 600; }
+.ocx-session-metrics meter { width: 100%; height: 6px; display: block; appearance: none; }
+.ocx-session-metrics meter::-webkit-meter-bar { background: var(--v2-border-border-muted); border: 0; border-radius: 5px; }
+.ocx-session-metrics meter::-webkit-meter-optimum-value { background: var(--v2-background-bg-accent); border-radius: 5px; }
+.ocx-metrics-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.ocx-metrics-filters label { display: grid; flex: 1 1 96px; min-width: 0; gap: 3px; }
+.ocx-metrics-filters select, .ocx-session-metrics button {
+  font: inherit;
+  color: inherit;
+  background: var(--v2-background-bg-layer-01);
+  padding: 4px 6px;
+  border: 1px solid var(--v2-border-border-muted);
+  border-radius: 5px;
+}
+.ocx-metrics-filters select { width: 100%; text-overflow: ellipsis; }
+.ocx-session-metrics :is(button, select, summary):focus-visible { outline: 2px solid var(--v2-border-border-focus); }
+.ocx-session-metrics summary, .ocx-session-metrics button { cursor: pointer; }
+.ocx-session-metrics summary { display: list-item; font-weight: 500; }
+.ocx-session-metrics [role=status] { margin: 0 0 8px; }
+.ocx-session-metrics button { margin-bottom: 8px; }
+.ocx-session-metrics details dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 10px 0 0; }
+.ocx-session-metrics details dd { margin: 0; text-align: end; }
+.ocx-metrics-estimate { margin: 8px 0; font-variant-numeric: tabular-nums; }

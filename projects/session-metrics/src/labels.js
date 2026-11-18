@@ -1,0 +1,26 @@
+export const en = {
+  estimated: 'Estimated visible output', estimateHint: 'Observed text added in the last sample, tokenized locally. Reasoning and tool output are excluded.',
+  title: 'Session metrics', recentModel: 'Latest model', unknown: 'Unknown model', all: 'All models',
+  model: 'Model', range: 'Period', session: 'Entire session', hour: 'Last hour',
+  hit: 'Cache hit rate', recent: 'Latest turn', previous: 'Previous turn',
+  generating: 'Generating…', loading: 'Loading history · partial totals', offline: 'Offline · partial totals',
+  error: 'Incomplete history', retry: 'Retry', missing: 'Finished steps without usage',
+  wait: 'Includes first-token wait', reported: 'Tokens reported by host', total: 'Total input', input: 'Uncached input',
+  read: 'Cache read', write: 'Cache write', output: 'Visible output', reasoning: 'Reasoning',
+  compaction: 'Of all tokens: compaction', empty: 'No usage recorded for this selection',
+  hitHint: 'Cache reads divided by all input, including cache writes. Individual unreported counters may be recorded as zero.',
+  speedHint: 'Output and reasoning tokens divided by provider streaming time across the complete turn. While generating, the previous turn is shown when available.',
+}
+export const zh = {
+  estimated: '估算 · 可见输出', estimateHint: '按最近采样区间新增的正文在本机分词，仅统计可见回答。',
+  title: '会话统计', recentModel: '最近模型', unknown: '模型未知', all: '全部模型',
+  model: '模型', range: '时间范围', session: '整个会话', hour: '最近一小时',
+  hit: '缓存命中率', recent: '最近回合', previous: '上一回合',
+  generating: '生成中…', loading: '正在补全历史 · 当前为部分统计', offline: '连接已断开 · 当前为部分统计',
+  error: '历史未完整加载', retry: '重试', missing: '缺少用量的已结束步骤',
+  wait: '含首 token 等待', reported: 'Token 明细 · 按宿主记录', total: '总输入', input: '未缓存输入',
+  read: '缓存读取', write: '缓存写入', output: '可见输出', reasoning: '推理',
+  compaction: '其中用于压缩的 token', empty: '此范围内暂无用量记录',
+  hitHint: '缓存读取 ÷ 总输入。总输入含未缓存输入、缓存读取和写入。宿主可能将未上报的单项记录为零。',
+  speedHint: '完整回合的可见输出和推理 token，除以各步骤实际生成秒数。生成中可查看上一回合的已结算速度。',
+}
