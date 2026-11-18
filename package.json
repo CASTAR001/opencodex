@@ -1,0 +1,29 @@
+{
+  "name": "provider-quota",
+  "version": "0.1.0-alpha.1",
+  "description": "Local usage, MiniMax MCP calls and on-demand provider quotas for OpenCode Desktop",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./server": "./src/server.js",
+    "./gui-experimental": "./gui-experimental.cjs",
+    "./rpc": "./src/contract.js"
+  },
+  "files": [
+    "src/server.js",
+    "src/accounts.js",
+    "src/providers.js",
+    "src/contract.js",
+    "src/media.js",
+    "gui-experimental.cjs",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node build.mjs --check && node --test",
+    "prepack": "npm test"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}
