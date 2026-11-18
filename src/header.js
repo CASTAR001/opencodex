@@ -1,0 +1,42 @@
+import { createEffect } from 'solid-js'
+
+export function header(ctx, input, useSession, open) {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'ocx-metrics-header'
+  const label = document.createElement('span')
+  const hit = document.createElement('strong')
+  const speed = document.createElement('span')
+  button.append(label, hit, speed)
+  button.onclick = () => open(input.session)
+
+  createEffect(() => {
+    button.hidden = !input.active
+    if (!input.active) return
+    const source = useSession(input.session)
+    const locale = ctx.locale.locale()
+    const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 })
+    const percent = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 })
+    createEffect(() => {
+      const { hit: ratio, speed: turn, previous, missing } = source.overall()
+      const estimate = source.estimate()
+      const coverage = source.coverage()
+      const t = key => ctx.t(key)
+      const cache = ratio == null ? '—' : percent.format(ratio)
+      const rate = estimate?.tps ?? turn?.tps
+      const value = (rate == null ? '—' : number.format(rate)) + ' TPS'
+      const partial = coverage !== 'complete'
+      label.textContent = t(input.compact ? 'cacheShort' : 'cacheLabel')
+      hit.textContent = cache + (partial && ratio != null ? '*' : '')
+      speed.textContent = (estimate ? '≈' : previous && turn ? t('prevShort') + ' ' : '') + value
+      const hint = [t('hit') + ' ' + cache, t(estimate ? 'estimated' : previous ? 'previous' : 'recent') + ' ' + value]
+      if (partial) hint.push(t(coverage))
+      if (source.running()) hint.push(t('generating'))
+      if (turn?.includesWait && !estimate) hint.push(t('wait'))
+      if (missing) hint.push(t('missing') + ' · ' + missing)
+      button.title = [t('title'), ...hint].join(' · ')
+      button.setAttribute('aria-label', button.title)
+    })
+  })
+  return button
+}

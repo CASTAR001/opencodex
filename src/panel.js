@@ -1,8 +1,6 @@
 import { createEffect, createSignal, onCleanup, untrack } from 'solid-js'
 import { usePanel } from '@opencode/plugin/gui'
-import { observeSession } from './session.js'
 import { summarize } from './metrics.js'
-import { visibleRate } from './stream.js'
 
 function element(tag, text) {
   const node = document.createElement(tag)
@@ -28,16 +26,14 @@ function stat(grid, label, hint) {
   return { title, value }
 }
 
-function mount(root, ctx, session, connected, locale) {
+function mount(root, ctx, source, locale) {
   const t = key => ctx.t(key)
   const digits = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 })
   const ratio = new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 })
-  const source = observeSession(session, connected)
   const [model, setModel] = createSignal('')
   const [period, setPeriod] = createSignal('session')
   const [now, setNow] = createSignal(Date.now())
   const cutoff = () => period() === 'hour' ? now() - 3600000 : -Infinity
-  const liveRate = visibleRate(session, connected, model, cutoff)
   const modelName = id => id === '?' ? t('unknown') : id || '—'
 
   const modelLine = element('p')
@@ -64,7 +60,8 @@ function mount(root, ctx, session, connected, locale) {
   estimate.className = 'ocx-metrics-estimate'
   estimate.title = t('estimateHint')
   createEffect(() => {
-    const rate = liveRate()
+    const sample = source.estimate()
+    const rate = sample && (!model() || sample.model === model()) && sample.created >= cutoff() ? sample.tps : undefined
     estimate.hidden = rate == null
     estimate.textContent = rate == null ? '' : t('estimated') + ' · ' + digits.format(rate) + ' TPS'
   })
@@ -110,7 +107,7 @@ function mount(root, ctx, session, connected, locale) {
     const coverage = source.coverage()
     function paint() {
       lastPaint = performance.now()
-      const r = summarize(rows, { model: selected, since: hour ? end - 1 - 3600000 : -Infinity, until: end,
+      const r = !selected && !hour ? source.overall() : summarize(rows, { model: selected, since: hour ? end - 1 - 3600000 : -Infinity, until: end,
         running, complete: coverage === 'complete' })
       const options = JSON.stringify(r.models)
       if (options !== modelOptions) {
@@ -146,7 +143,7 @@ function mount(root, ctx, session, connected, locale) {
   onCleanup(() => clearTimeout(timer))
 }
 
-export function panel(ctx, props) {
+export function panel(ctx, props, useSession) {
   const frame = usePanel()
   const root = element('section')
   root.className = 'ocx-session-metrics'
@@ -154,9 +151,8 @@ export function panel(ctx, props) {
     if (!frame.visible()) { root.replaceChildren(); return }
     const session = props.session
     const locale = ctx.locale.locale()
-    const { data, client, connected } = session.server
-    const target = { id: session.id, key: session.key, server: { data, client } }
-    untrack(() => mount(root, ctx, target, connected, locale))
+    const source = useSession(session)
+    untrack(() => mount(root, ctx, source, locale))
   })
   return root
 }

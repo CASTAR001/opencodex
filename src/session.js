@@ -1,9 +1,10 @@
-import { createEffect, createMemo, createSignal, mapArray, onCleanup } from 'solid-js'
+import { createEffect, createMemo, createSignal, createRoot, mapArray, onCleanup } from 'solid-js'
 import { historyPrefix } from './history.js'
-import { measurement, mergeHistory } from './metrics.js'
+import { visibleRate } from './stream.js'
+import { measurement, mergeHistory, summarize } from './metrics.js'
 
 // A Solid owner is scoped to exactly one visible mounted session and server connection.
-export function observeSession(session, connected) {
+function observeSession(session, connected) {
   const { id, server } = session
   const data = server.data.session
   const client = server.client
@@ -17,7 +18,7 @@ export function observeSession(session, connected) {
   const anchor = createMemo(() => data.message.more(id) ? data.message.list(id)[0]?.id : undefined)
   createEffect(() => {
     attempt()
-    if (!connected) return
+    if (!connected || session.pending) return
     let active = true
     setReady(false)
     setCoverage('loading')
@@ -45,5 +46,31 @@ export function observeSession(session, connected) {
     }).catch(() => { if (!controller.signal.aborted) setCoverage('error') })
   })
   const rows = createMemo(() => mergeHistory(prefix(), live()))
-  return { rows, coverage, running, retry: () => setAttempt(n => n + 1) }
+  const overall = createMemo(() => summarize(rows(), { running: running(), complete: coverage() === 'complete' }))
+  const estimate = visibleRate(session, connected && !session.pending)
+  return { rows, coverage, running, overall, estimate, retry: () => setAttempt(n => n + 1) }
+}
+
+// The title and the detail panel can both be visible. Share paging and tokenization until the last view leaves.
+export function createSessionMetrics() {
+  const observed = new Map()
+  return function useSession(session) {
+    const { key, id, pending } = session
+    const { data, client, connected } = session.server
+    let entry = observed.get(key)
+    if (!entry || entry.data !== data || entry.client !== client || entry.connected !== connected || entry.pending !== pending) {
+      const target = { id, pending, server: { data, client } }
+      entry = createRoot(dispose => ({
+        data, client, connected, pending, dispose, readers: 0, source: observeSession(target, connected),
+      }), null)
+      observed.set(key, entry)
+    }
+    entry.readers++
+    onCleanup(() => {
+      if (--entry.readers) return
+      entry.dispose()
+      if (observed.get(key) === entry) observed.delete(key)
+    })
+    return entry.source
+  }
 }
