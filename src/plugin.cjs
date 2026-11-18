@@ -4,6 +4,7 @@ const { insert } = require('solid-js/web')
 const styles = require('./toolbar.css')
 
 const labels = {
+  '': 'Text', text: 'Text',
   ts: 'TypeScript', typescript: 'TypeScript', tsx: 'TSX',
   js: 'JavaScript', javascript: 'JavaScript', jsx: 'JSX',
   py: 'Python', python: 'Python',
