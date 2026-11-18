@@ -18,7 +18,7 @@
 | 04 | [Compact Auto Collapse](projects/compact-auto-collapse/README.md) | 预研 |
 | 05 | [Execution Timeline Auto Collapse](projects/execution-timeline/README.md) | 预研 |
 | 06 | [Session Metrics Monitor](projects/session-metrics/README.md) | `0.1.0-alpha.3`，本机试用 |
-| 07 | [Provider Quota Monitor](projects/provider-quota/README.md) | 预研 |
+| 07 | [Provider Quota Monitor](projects/provider-quota/README.md) | `0.1.0-alpha.2`，已通过 macOS 本机验收。对话顶栏可查看用量和手动刷新额度 |
 | 08 | [File Review Enhancer](projects/file-review-enhancer/README.md) | 预研 |
 
 ## 安装验证工具

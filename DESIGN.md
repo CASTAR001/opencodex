@@ -22,7 +22,7 @@ git clone --single-branch --branch plugins/code-block-enhancer https://github.co
 | compact-auto-collapse | 04 · 压缩摘要。第三批，先评估原生 |
 | execution-timeline | 05 · 回合中间活动的展示。第三批 |
 | session-metrics | 06 · 会话顶栏常驻显示缓存命中率、跨模型实时 TPS 和上下文使用率，明细侧栏共享同一份会话数据。alpha.3 已完成安装验证。[开发计划](projects/session-metrics/PLAN.md) |
-| provider-quota | 07 · 套餐额度来源、降级与独立展示。第二批 |
+| provider-quota | 07 · 对话顶栏的统计图标打开独立用量页，按当前连接显示服务商，用量从本机历史统计，账户额度由用户手动刷新。alpha.2 已通过本机验收。 |
 | file-review-enhancer | 08 · 文件审阅缺口。第四批 |
 
 ## 消息渲染分工
@@ -33,7 +33,7 @@ git clone --single-branch --branch plugins/code-block-enhancer https://github.co
 
 2.3.2 的公开 Panel 仅有 side 区域，选中的标签内容独占该处；可固定标签、调宽和关闭。session.panel.end 是标签条操作区，session.header 能显示紧凑摘要，window.bottom 能放一个窗口底栏。选择文件标签时不能同时保证完整监控板可见。默认建议为一个固定监控标签 + 可隐藏的紧凑底栏摘要；详细视图保留文件导航和各自的打开状态。[面板及插槽定义][reg] · [真实侧栏][side] · [社区 Workbench 实践](https://github.com/henrikogaard/opencode-plugins)
 
-06 拥有共享 Panel，渲染 Current Session 与可选的 Provider Quotas。07 提供以自身插件 ID 命名的 V1 契约，可独立安装并用自己的菜单打开独立标签。06 经 ctx.use 响应式读取 07 的 ctx.provide；只形成 06→07 的可选运行时依赖。共同字段规范公开在协调仓库，双方可分别测试。两项功能共用一个默认监控标签。[运行时契约][contract]
+目前 06 使用会话顶栏与明细侧栏，07 使用独立统计弹窗。若后续将两者合并展示，可由 06 提供共享面板，07 提供只读额度快照，06 通过可选运行时依赖读取。两者仍可分别安装和测试。[运行时契约][contract]
 
 | 协议项（提案） | 语义 |
 |---|---|
