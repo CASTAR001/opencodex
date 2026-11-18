@@ -1,7 +1,6 @@
 import { Plugin, Slot, Style } from '@opencode/plugin/gui'
 import { createComponent, createEffect, onCleanup } from 'solid-js'
 import { families, contract, unavailable } from './contract.js'
-import { mediaKind } from './media.js'
 import css from './style.css'
 
 const number = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 })
@@ -38,31 +37,17 @@ function table(headers, rows) {
   scroll.append(t)
   return scroll
 }
-function range(days) {
-  const now = new Date(),
-    start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+function range(days, now = new Date()) {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   start.setDate(start.getDate() - Math.max(0, days - 1))
   return { from: days ? start.getTime() : 0, to: now.getTime() + 1 }
-}
-const familyPatterns = {
-  kimi: /kimi|moonshot/i,
-  mimo: /mimo|xiaomi/i,
-  glm: /zhipu|bigmodel|\bglm|^zai/i,
-  deepseek: /deepseek/i,
-  minimax: /minimax|mini-max/i,
-  qwen: /qwen|dashscope|alibaba|bailian/i,
-}
-function modelFamily(model) {
-  return Object.keys(familyPatterns).find(
-    (k) => familyPatterns[k].test(model.providerID) || familyPatterns[k].test(model.id),
-  )
 }
 function total(t) {
   return t.input + t.output + t.reasoning + t.cache.read + t.cache.write
 }
-function usageView(stats, media, filter) {
+function usageView(stats, media, providers, showMini) {
   const box = el('div')
-  const models = stats.models.filter((m) => !filter || modelFamily(m.model) === filter)
+  const models = stats.models.filter((m) => providers.includes(m.model.providerID))
   const counters = el('div', null, 'pq-counters')
   for (const [name, value] of [
     ['Token 总量', models.reduce((n, m) => n + total(m.tokens), 0)],
@@ -72,43 +57,37 @@ function usageView(stats, media, filter) {
     item.append(el('span', name), el('strong', fmt(value)))
     counters.append(item)
   }
-  box.append(counters)
-  box.append(
-    models.length
-      ? table(
-          ['模型 / 服务商', '输入', '输出', '推理', '缓存读', '缓存写'],
-          models.map(({ model, tokens: t }) => [
-            model.id + (model.variant ? ' · ' + model.variant : '') + ' / ' + model.providerID,
-            ...[t.input, t.output, t.reasoning, t.cache.read, t.cache.write].map(fmt),
-          ]),
-        )
-      : el('p', '时段内没有匹配的模型记录。', 'pq-muted'),
-  )
-  if (!filter || filter === 'minimax') {
+  if (providers.length)
     box.append(
-      el('h3', 'MiniMax MCP'),
-      el('p', '插件启用后完成的工具调用，包含 Code Mode。一次调用按一次计数。', 'pq-muted'),
-    )
-    box.append(
-      media
+      counters,
+      models.length
         ? table(
-            ['工具', '成功', '失败'],
-            media.map((row) => [row.kind, fmt(row.calls - row.failed), fmt(row.failed)]),
+            ['模型 / 服务商', '输入', '输出', '推理', '缓存读', '缓存写'],
+            models.map(({ model, tokens: t }) => [
+              model.id + (model.variant ? ' · ' + model.variant : '') + ' / ' + model.providerID,
+              ...[t.input, t.output, t.reasoning, t.cache.read, t.cache.write].map(fmt),
+            ]),
           )
-        : el('p', '工具计数暂不可用。', 'pq-muted'),
+        : el('p', '时段内没有匹配的模型记录。', 'pq-muted'),
     )
-    const direct = (stats.tools?.usage || []).filter((tool) => mediaKind(tool.name))
-    if (direct.length) {
-      const details = el('details')
-      details.append(
-        el('summary', 'OpenCode 历史中单独列出的工具调用'),
+  if (showMini) {
+    box.append(el('h3', 'MiniMax MCP'))
+    if (media) {
+      box.append(
         table(
-          ['原始工具名', '调用', '失败'],
-          direct.map((t) => [t.name, fmt(t.calls), fmt(t.failed)]),
+          ['工具', '成功', '失败'],
+          media.map((r) => [r.kind, fmt(r.calls - r.failed), fmt(r.failed)]),
+        ),
+        el(
+          'small',
+          media[0]?.source === 'history'
+            ? '来自本机历史，含 Code Mode 内层调用。'
+            : '宿主历史不可用，仅显示插件启用后观察到的调用。',
+          'pq-muted',
         ),
       )
-      box.append(details)
-    }
+    } else box.append(el('p', '工具计数暂不可用。', 'pq-muted'))
+    box.append(el('p', 'MCP 记录没有逐笔扣额，实际消耗请以 MiniMax 账单为准。', 'pq-muted'))
   }
   return box
 }
@@ -150,48 +129,112 @@ function dashboard(ctx, session, cache) {
     select.onchange = () => change(select.value)
     return select
   }
+  let configured = [],
+    discovered = false,
+    inventorySerial = 0,
+    mimo
+  const has = (id) => configured.some((row) => row.family === id)
+  const options = () => configured.map((row) => [row.family, families[row.family]])
+  function mimoCard() {
+    const card = el('section', null, 'pq-card')
+    card.append(el('h3', '小米 MiMo · Standard'), el('small', '¥99/月 · 110 亿 Credits · 本机估算'))
+    for (const [key, label] of [
+      ['today', '今天'],
+      ['week', '近 7 天'],
+    ]) {
+      const reading = mimo?.[key]
+      const n = reading?.percent
+      const value = Number.isFinite(n) ? (n > 0 && n < 0.01 ? '<0.01%' : fmt(n) + '%') : '—'
+      card.append(
+        el('div', label + '　' + value + (reading?.partial ? '（部分记录缺少可换算用量）' : '')),
+      )
+    }
+    if (mimo?.problem) card.append(el('small', mimo.problem))
+    return card
+  }
   function drawUsage() {
-    if (stats) content.replaceChildren(usageView(stats, media, filter))
+    if (!discovered || !configured.length || index !== 0) return
+    const general = configured.filter((r) => r.family !== 'mimo' && (!filter || r.family === filter))
+    const period = controls.querySelector('[aria-label="统计时段"]')
+    if (period) period.hidden = !general.length
+    const nodes = []
+    if (general.length && stats)
+      nodes.push(
+        usageView(
+          stats,
+          media,
+          general.flatMap((r) => r.providers),
+          general.some((r) => r.family === 'minimax'),
+        ),
+      )
+    if (has('mimo') && (!filter || filter === 'mimo')) nodes.push(mimoCard())
+    content.replaceChildren(...nodes)
+  }
+  async function discover() {
+    if (!alive || document.hidden) return
+    const ticket = ++inventorySerial
+    try {
+      const list = await api.inventory({}, { location, signal: AbortSignal.timeout(12000) })
+      if (!alive || ticket !== inventorySerial) return
+      const changed = !discovered || JSON.stringify(list) !== JSON.stringify(configured)
+      discovered = true
+      if (!changed) return
+      for (const [id, cached] of history) {
+        if (JSON.stringify(list.find((r) => r.family === id)) !== cached.connection) history.delete(id)
+      }
+      configured = list
+      if (!has(filter)) filter = ''
+      stats = media = mimo = lastRead = undefined
+      switchTo(index)
+    } catch {
+      if (alive && ticket === inventorySerial) status.textContent = '暂时无法读取当前服务商配置。'
+    }
   }
   async function readUsage() {
-    if (!alive || index !== 0 || document.hidden || active) return
+    if (!alive || !discovered || !configured.length || document.hidden || active) return
     const token = ++serial,
       controller = new AbortController()
     active = controller
-    const span = range(days)
-    if (!stats) status.textContent = '正在读取本地用量…'
+    const now = new Date(),
+      span = range(days, now),
+      week = range(7, now)
+    const general = index === 0 && configured.some((r) => r.family !== 'mimo')
+    const readOptions = { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) }
+    const local = { ...readOptions, location }
     try {
-      const options = { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) }
-      const [data, calls] = await Promise.allSettled([
-        client.experimental.session.stats(
-          {
-            ...span,
-            from: span.from || undefined,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-            tools: 'detail',
-          },
-          options,
-        ),
-        api.media(span, { ...options, location }),
+      const [data, calls, estimate] = await Promise.allSettled([
+        general &&
+          client.experimental.session.stats(
+            {
+              ...span,
+              from: span.from || undefined,
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+              tools: 'none',
+            },
+            readOptions,
+          ),
+        general && has('minimax') && api.media(span, local),
+        has('mimo') && api.mimo({ ...week, today: range(1, now).from }, local),
       ])
       if (!alive || token !== serial) return
-      if (data.status !== 'fulfilled') throw Error()
-      stats = data.value
-      media = calls.status === 'fulfilled' ? calls.value : null
-      lastRead = Date.now()
-      drawUsage()
-      status.textContent = '当前服务器 · 所有项目 · 更新于 ' + time(lastRead)
-    } catch {
-      if (alive && token === serial)
-        status.textContent =
-          (lastRead ? '保留 ' + time(lastRead) + ' 的统计。' : '') + '暂时无法读取本地用量。'
+      media = calls.status === 'fulfilled' ? calls.value : undefined
+      mimo = estimate.status === 'fulfilled' ? estimate.value : { problem: '暂时无法读取本机用量' }
+      if (data.status === 'fulfilled' && general) stats = data.value
+      if (index === 0) drawUsage()
+      else drawQuotas()
+      if (data.status === 'rejected') status.textContent = '暂时无法读取模型统计。'
+      else if (index === 0) {
+        lastRead = Date.now()
+        status.textContent = '当前服务器 · 所有项目 · 更新于 ' + time(lastRead)
+      }
     } finally {
       if (active === controller) active = undefined
     }
   }
   function drawQuotas() {
     if (!alive || index !== 1) return
-    const cards = Object.entries(families).map(([id, name]) => {
+    const cards = options().map(([id, name]) => {
+      if (id === 'mimo') return mimoCard()
       const card = el('section', null, 'pq-card'),
         top = el('div', null, 'pq-top')
       top.append(el('h3', name))
@@ -202,7 +245,7 @@ function dashboard(ctx, session, cache) {
         top.append(b)
       }
       card.append(top)
-      const entries = history.get(id)
+      const entries = history.get(id)?.rows
       if (!entries) card.append(el('p', unavailable[id] || '尚未手动查询', 'pq-muted'))
       for (const entry of entries || []) {
         if (entry.source) card.append(el('small', entry.source + ' · ' + entry.host))
@@ -236,10 +279,12 @@ function dashboard(ctx, session, cache) {
     })
     content.replaceChildren(...cards)
     const all = controls.querySelector('button')
-    if (all) all.disabled = busy.size > 0
+    if (all) all.disabled = busy.size > 0 || !configured.some((r) => !unavailable[r.family])
   }
   async function refresh(id, source) {
-    if (busy.has(id) || unavailable[id]) return
+    if (busy.has(id) || unavailable[id] || !has(id)) return
+    const connection = JSON.stringify(configured.find((r) => r.family === id))
+    const valid = () => alive && connection === JSON.stringify(configured.find((r) => r.family === id))
     busy.add(id)
     drawQuotas()
     try {
@@ -247,12 +292,15 @@ function dashboard(ctx, session, cache) {
         { family: id, ...(source && { source }) },
         { location, signal: AbortSignal.timeout(15000) },
       )
-      history.set(
-        id,
-        source ? [...(history.get(id) || []).filter((p) => p.source !== source), ...rows] : rows,
-      )
+      if (valid())
+        history.set(id, {
+          connection,
+          rows: source
+            ? [...(history.get(id)?.rows || []).filter((p) => p.source !== source), ...rows]
+            : rows,
+        })
     } catch {
-      history.set(id, [{ problem: '额度服务未连接，请稍后手动刷新' }])
+      if (valid()) history.set(id, { connection, rows: [{ problem: '额度服务未连接，请稍后手动刷新' }] })
     } finally {
       busy.delete(id)
       drawQuotas()
@@ -273,6 +321,10 @@ function dashboard(ctx, session, cache) {
     controls.replaceChildren()
     content.replaceChildren()
     status.textContent = ''
+    if (!discovered || !configured.length) {
+      status.textContent = discovered ? '当前工作区尚未配置支持的服务商。' : '正在读取当前服务商…'
+      return
+    }
     if (i === 0) {
       controls.append(
         selection(
@@ -290,25 +342,39 @@ function dashboard(ctx, session, cache) {
             switchTo(0)
           },
         ),
-        selection('模型服务商', [['', '全部服务商'], ...Object.entries(families)], filter, (v) => {
+        selection('模型服务商', [['', '全部服务商'], ...options()], filter, (v) => {
           filter = v
           drawUsage()
         }),
       )
       drawUsage()
-      void readUsage()
-      clock = setInterval(readUsage, 60000)
     } else {
-      controls.append(
-        btn('刷新全部额度', () => Promise.all(Object.keys(families).map((id) => refresh(id)))),
-      )
+      controls.append(btn('刷新全部额度', () => Promise.all(configured.map((r) => refresh(r.family)))))
       drawQuotas()
     }
+    void readUsage()
+    clock = setInterval(readUsage, 60000)
   }
-  document.addEventListener('visibilitychange', readUsage)
+  const visible = () => {
+    void discover()
+    void readUsage()
+  }
+  const inventoryClock = setInterval(discover, 30000)
+  document.addEventListener('visibilitychange', visible)
   const stop = session.server.data?.listen(({ name }) => {
     if (
-      index !== 0 ||
+      [
+        'provider.updated',
+        'model.updated',
+        'integration.updated',
+        'config.updated',
+        'mcp.status.changed',
+        'mcp.tools.changed',
+        'server.connected',
+      ].includes(name)
+    )
+      void discover()
+    if (
       document.hidden ||
       queued ||
       ![
@@ -328,9 +394,11 @@ function dashboard(ctx, session, cache) {
     alive = false
     cancelUsage()
     stop?.()
-    document.removeEventListener('visibilitychange', readUsage)
+    clearInterval(inventoryClock)
+    document.removeEventListener('visibilitychange', visible)
   })
   switchTo(0)
+  void discover()
   return createComponent(ctx.ui.Dialog, { title: '用量与额度', size: 'large', children: root })
 }
 export default Plugin.define({
@@ -341,7 +409,8 @@ export default Plugin.define({
       at: 'session.header',
       order: 8,
       render(input) {
-        const button = btn('用量', () => ctx.dialogs.open(() => dashboard(ctx, input.session, cache)))
+        const button = btn(null, () => ctx.dialogs.open(() => dashboard(ctx, input.session, cache)))
+        button.append(createComponent(ctx.ui.Icon, { name: 'window-analytics', size: 'normal' }))
         button.className = 'pq-open'
         button.title = '查看用量与额度'
         button.setAttribute('aria-label', button.title)

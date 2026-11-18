@@ -3,18 +3,26 @@ import { quotaService } from './accounts.js'
 import { routeFor } from './providers.js'
 import { mediaTotals, observeMedia, officialMiniMcp } from './media.js'
 
+import { inventory, mcpFamily } from './inventory.js'
+import { withHistory, historicalMedia, mimoUsage } from './history.js'
+
 export default {
   id: 'provider-quota',
   async setup(ctx) {
     let accounts = [],
       names = [],
+      mcpFamilies = new Map(),
       mediaWriteFailed = false
     await ctx.mcp.transform((editor) => {
       const next = [],
-        aliases = []
+        aliases = [],
+        configured = new Map()
       for (const [name, config] of editor.list()) {
-        if (!officialMiniMcp(name, config)) continue
-        aliases.push(name)
+        const official = officialMiniMcp(name, config)
+        const family = mcpFamily(name, config, official)
+        if (family) configured.set(name, family)
+        if (family === 'minimax') aliases.push(name)
+        if (!official) continue
         const { MINIMAX_API_HOST, MINIMAX_API_KEY } = config.environment || {}
         // Copy the two scalar settings while the host's transform editor is valid.
         const route = routeFor('', MINIMAX_API_HOST ?? process.env.MINIMAX_API_HOST)
@@ -25,6 +33,7 @@ export default {
             key: () => MINIMAX_API_KEY ?? process.env.MINIMAX_API_KEY,
           })
       }
+      mcpFamilies = configured
       names = aliases
       accounts = next
     })
@@ -37,11 +46,33 @@ export default {
       }
     })
     const refresh = quotaService(ctx, () => accounts)
+    async function configured() {
+      const [providers, servers] = await Promise.all([ctx.provider.list(), ctx.mcp.list()])
+      const enabled = servers.data
+        .filter((s) => s.status.status !== 'disabled')
+        .map((s) => ({ name: s.name, family: mcpFamilies.get(s.name) }))
+      return inventory(providers.data, enabled)
+    }
     await ctx.rpc.register(contract, {
+      inventory: configured,
+      mimo: async (range) => {
+        if (
+          !(range.from <= range.today && range.today < range.to && range.to - range.from <= 8 * 86400000)
+        )
+          throw Error('时段无效')
+        const row = (await configured()).find((v) => v.family === 'mimo')
+        if (!row?.plans.length) return { problem: '未识别到 MiMo Token Plan 连接' }
+        return withHistory(ctx.app, (db) => mimoUsage(db, range, row.plans))
+      },
       refresh: ({ family, source }, { signal }) => refresh(family, signal, source),
       media: async (range) => {
+        try {
+          return await withHistory(ctx.app, (db) => historicalMedia(db, range, names))
+        } catch {
+          // Isolated storage / unsupported schema: the live ledger has coverage only since installation.
+        }
         if (mediaWriteFailed) throw Error('本轮工具记录不完整')
-        return mediaTotals(ctx.storage, range)
+        return (await mediaTotals(ctx.storage, range)).map((r) => ({ ...r, source: 'ledger' }))
       },
     })
   },
