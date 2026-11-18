@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-alpha.1 · 2026-11-18
+
+在 Desktop 2.3.2 的 TypeScript、JavaScript、Python 和 Shell 围栏增加语言标签、常显的原生复制按钮和逐块软换行。支持键盘操作、暖白主题和内置主题。
+
+## 预研
 
 建立独立仓库，登记范围、兼容基线与首版验收条件。
 

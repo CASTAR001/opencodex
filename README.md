@@ -1,29 +1,24 @@
 # Code Block Enhancer
 
-闭合代码围栏的结构、折叠、换行、行号和 Diff 文本；复用宿主高亮与复制。
+OpenCode Desktop 会话代码块插件，当前本地版本为 **0.1.0-alpha.1**，适配 macOS Desktop **2.3.2**。顶栏左侧显示围栏语言，右侧有自动换行开关和宿主的复制按钮。自动换行默认关闭，每块独立，消息重新挂载后恢复默认。打开时只改变显示，复制保留制表符、中文、空行和原来的行尾。
 
-## 状态与兼容范围
+| 围栏标签 | 顶栏显示 |
+|---|---|
+| `js`、`javascript`、`jsx` | JavaScript、JSX |
+| `ts`、`typescript`、`tsx` | TypeScript、TSX |
+| `py`、`python` | Python |
+| `sh`、`shell`、`bash`、`zsh` | Shell、Bash、Zsh |
 
-预研阶段。设计基线为 OpenCode Desktop 2.3.2。首版发布前须有独立实现、自动化测试和目标宿主验收。
+## 本地试用
 
-## 首版验收
+将发行包解包后，把 `package/` 中的文件放在 `~/.config/opencode/plugins/code-block-enhancer/`。重新打开 OpenCode，在「设置 → 扩展」可以查看或停用插件。在包含上述标签的已有会话中即可试用。高亮读取当前宿主主题。Tab 聚焦后，用空格或 Enter 切换换行，也可以键盘激活复制。
 
-完整代码块的顶栏左侧显示围栏声明的语言，右侧保留一个复制按钮并增加逐块「自动换行」开关。建议默认保持宿主当前行为，关闭时长行可横向滚动，打开时仅在显示层软换行。两个相同源码的块可以有不同的开关状态。
+## 渲染与兼容
 
-### 实现路径
+插件通过 GUI 的 `CodeBlock` 注册语言，通过 `Style` 布置顶栏。2.3.2 在同一围栏内保存了原始高亮正文和 Copy，插件将它们与顶栏排在一起。额外的原生 CodeBlockAction 有单独的布局位置。高亮使用宿主的词法分析器和当前主题的 `--syntax-*` 变量，Shell 围栏也按词法角色着色。若宿主渲染区缺少约定的正文或 Copy 节点，则通过公开的 `ctx.ui.Code` 回退到代码内容。升级宿主时应复测组件属性和位置。[公开渲染接口](https://github.com/anomalyco/opencode/blob/c0ad18b402eb2827fc1ee71c171b1177b3fc02d1/packages/plugin/src/gui/registries.ts#L691) · [Desktop 围栏与复制处理](https://github.com/anomalyco/opencode/blob/c0ad18b402eb2827fc1ee71c171b1177b3fc02d1/packages/session-ui/src/components/markdown.tsx#L313)
 
-2.3.2 自带语言元数据、复制与高亮。首版对显式列出的语言及别名使用 GUI `CodeBlock` 渲染加顶栏的组件，复用 `ctx.ui.Code` 的词法着色。换行开关使用每个组件实例自己的状态和可键盘操作的按钮。宿主在外层保留 Copy，计划在自己渲染的围栏内为它预留顶栏右侧空间并定向定位；`ctx.ui.Code` 内层也会生成原生围栏，需在本组件内隐藏重复的内层复制按钮。这个布局依赖内部 slot，升级时复测。公共 `CodeBlockAction.run` 只接收 code、language、session，没有唯一的块 ID 或 DOM 句柄。[公开接口](https://github.com/anomalyco/opencode/blob/c0ad18b402eb2827fc1ee71c171b1177b3fc02d1/packages/plugin/src/gui/registries.ts#L688) · [宿主 Code](https://github.com/anomalyco/opencode/blob/c0ad18b402eb2827fc1ee71c171b1177b3fc02d1/packages/app/src/runtime/plugin/ui.tsx#L221) · [原生复制处理](https://github.com/anomalyco/opencode/blob/c0ad18b402eb2827fc1ee71c171b1177b3fc02d1/packages/session-ui/src/components/markdown.tsx#L681)
+流式围栏在宿主判定完成后出现顶栏。2.3.2 对停止生成和从历史重新解析的未闭合围栏也可能报告完成；公开参数只有语言、代码和会话。无标签、未知语言、Mermaid 保留原生展示。同一语言有多个渲染插件时，宿主选先注册的一项。会话内通过相同 Markdown 提供器显示的工具输出及文件预览也在该接口作用范围内。
 
-以 TS/JS、Python、Shell 及常见别名为首批验证集。已注册语言的完整围栏可以增强。流式未闭合、截断、未覆盖语言和已有专用渲染器的围栏先走原生路径。对于无语言围栏，只在已验证可匹配空标签的版本显示「纯文本」，避免猜测。若要求所有语言在流中也有可交互顶栏，再向 Desktop 提议围栏 header 插槽与逐块生命周期。改动限于 Markdown 前端。
+## 构建与验收
 
-Streamdown 的源码展示了如何把语言标题、操作区和高亮正文分开。Docusaurus 的换行按钮根据该块是否可滚动及当前换行状态显示，并以启用样式反馈当前状态。这两者提供交互参考，插件可继续使用 OpenCode 原有的 Solid 组件和高亮器。[Streamdown CodeBlock](https://github.com/vercel/streamdown/blob/main/packages/streamdown/lib/code-block/index.tsx) · [Docusaurus 换行按钮](https://github.com/facebook/docusaurus/blob/main/packages/docusaurus-theme-classic/src/theme/CodeBlock/Buttons/WordWrapButton/index.tsx)
-
-### 配色与验收
-
-02 读取宿主的 `--syntax-*` 变量，在浅色、深色主题下复测 Shell 和其余围栏的词法角色。
-
-- 键盘可操作顶栏。软换行前后，复制仍取得相同的宿主原始代码字符串，中文、制表符、缩进、空行和长 URL 均覆盖。
-- 测试流式完成、历史消息、窄窗、两个相同围栏和 Mermaid 共存。切换主题时重新取色，禁用后回到宿主围栏。
-- 用浅色、深色及内置主题检查词法角色辨识度与文本对比度。避免用一套固定的浅色语法色覆盖所有主题。
-
-版本号、测试入口和发行包由本仓库独立维护。当前无可安装版本。
+运行 `npm run build`、`npm test`、`npm pack`。发行入口只导入宿主共享模块，安装包自带 GUI bundle。协调仓库的 `tests/code-blocks` 使用 Desktop 随附的 Markdown、语言分派器、复制处理和高亮 Worker 验证包组合。折叠、行号和文件路径保留在后续计划。

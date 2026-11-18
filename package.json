@@ -1,0 +1,13 @@
+{
+  "name": "code-block-enhancer",
+  "version": "0.1.0-alpha.1",
+  "description": "Language labels and per-block soft wrapping for OpenCode Desktop Markdown",
+  "license": "MIT",
+  "exports": { "./gui-experimental": "./gui-experimental.cjs" },
+  "files": ["gui-experimental.cjs", "CHANGELOG.md"],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/build.mjs --check && node --test",
+    "prepack": "npm test"
+  }
+}
