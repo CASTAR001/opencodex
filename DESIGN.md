@@ -1,15 +1,27 @@
 # 仓库与集成设计
 
-各插件在独立 Git 仓库开发、测试与发布。本协调仓汇集功能范围、接口设计和兼容性验证工具。projects 目录收录各插件的范围与阶段记录，版本对应关系见首页。各项目采用 MIT 许可。
+每个插件使用独立的本地 Git 仓库。OpenCodex 是所有公开插件共用的远程备份和浏览入口。总仓库的 `main` 将组件文件汇总到 `projects/<插件名>/`，`plugins/<插件名>` 分支以该插件为仓库根目录，保留独立的公开提交历史。开发在各插件仓进行，通过测试后将同一版本同步到组件目录和备份分支。各组件采用 MIT 许可。
 
-| 仓库 | 所有权与阶段 |
+## 恢复单个插件
+
+例如，下面的命令会得到一个可直接运行 `npm test` 的代码块插件工作树。更换分支名即可取回其他组件的历史。
+
+```sh
+git clone --single-branch --branch plugins/code-block-enhancer https://github.com/CASTAR001/opencodex.git code-block-enhancer
+```
+
+常规克隆合集后也可以直接浏览和构建 `projects/` 下的组件。总仓库存放普通文件，无需初始化子模块。
+
+## 组件分工
+
+| 组件或工作区 | 所有权与阶段 |
 |---|---|
 | ux-integration | 源码证据、版本组合、跨插件验收与复跑入口 |
 | code-block-enhancer | 02 · 代码围栏顶栏、复制与逐块换行。alpha.3 已完成本机试用 |
 | markdown-presentation | 03 · assistant 正文的排版。第一批后续 |
 | compact-auto-collapse | 04 · 压缩摘要。第三批，先评估原生 |
 | execution-timeline | 05 · 回合中间活动的展示。第三批 |
-| session-metrics | 06 · 会话统计、共享监控标签。下一项优先开发，详见[缓存命中率与 TPS 计划](SESSION_METRICS_PLAN.md) |
+| session-metrics | 06 · 会话统计、共享监控标签。下一项优先开发，详见[缓存命中率与 TPS 计划](projects/session-metrics/PLAN.md) |
 | provider-quota | 07 · 套餐额度来源、降级与独立展示。第二批 |
 | file-review-enhancer | 08 · 文件审阅缺口。第四批 |
 
@@ -34,9 +46,9 @@
 
 ## 版本、验收与撤回
 
-开发基线为官方 tag v2.3.2，源码 SHA 见审计。本地包从绝对目录或 file URL 加入 Desktop 后台服务的全局配置；每个插件单独关闭或移除。可发布版本由各仓库自己生成包、运行本仓测试、更新 CHANGELOG/兼容范围、用独立 tag 关联发布物。集成仓只记录宿主/插件版本与已通过的组合。在目标 macOS 实例完成外观选择、禁用/恢复和重启测试后才登记生产验证；其他操作系统或新版本需单独验证。
+开发基线为官方 tag v2.3.2，源码 SHA 见审计。各组件可分别安装、关闭或移除。在对应的组件目录生成包、运行测试、更新 CHANGELOG 与兼容范围，确需发布时可用带组件名前缀的 tag 标识版本。根目录记录跨插件验收组合。目标 macOS 实例完成验收后再登记结果，其他操作系统或新版本单独验证。
 
-第一批覆盖 02 单装、03 单装、02 与 03 合装，以及按不同顺序禁用。第二批覆盖 06 单独、07 单独、合装、07 超时/卸载、切换会话/远程 server。每次优先复跑宿主 API/解析器、选区和历史夹具，再做隔离 Desktop 冒烟。若原生已满足验收，关闭对应自制实现。回退时先切换内置功能并禁用该插件，必要时将该仓库检出到前一已验版本再重载；协调仓库保留版本组合，其他插件可继续使用。
+02、03 分别测试单装、合装，以及按不同顺序禁用。06 首先测试单装和切换会话或远程 server；07 就绪后再测试其单装、合装、超时和卸载。每次先复跑宿主 API、解析器和历史夹具，再做隔离 Desktop 冒烟。要回退某个组件，可在 Desktop 中停用该组件，重新安装该组件前一个已验证的包。
 
 [contract]: https://github.com/anomalyco/opencode/blob/c0ad18b402eb2827fc1ee71c171b1177b3fc02d1/packages/plugin/src/gui/context.ts
 [reg]: https://github.com/anomalyco/opencode/blob/c0ad18b402eb2827fc1ee71c171b1177b3fc02d1/packages/plugin/src/gui/registries.ts
