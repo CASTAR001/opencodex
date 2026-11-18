@@ -4,7 +4,8 @@
   padding: 0 0 12px;
   min-width: 0;
 }
-.pq-page nav,
+.pq-toolbar,
+.pq-toolbar nav,
 .pq-controls,
 .pq-top,
 .pq-counters {
@@ -12,8 +13,9 @@
   align-items: center;
   gap: 10px;
 }
-.pq-page nav {
-  margin-bottom: 14px;
+.pq-toolbar {
+  flex-wrap: wrap;
+  margin-bottom: 10px;
 }
 .pq-open,
 .pq-page button,
@@ -42,8 +44,11 @@
 }
 .pq-controls {
   justify-content: flex-end;
-  margin: 0 0 10px;
+  margin-inline-start: auto;
   flex-wrap: wrap;
+}
+.pq-controls:empty {
+  display: none;
 }
 .pq-counters {
   gap: 24px;

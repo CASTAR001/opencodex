@@ -93,7 +93,8 @@ function usageView(stats, media, providers, showMini) {
 }
 function dashboard(ctx, session, cache) {
   const root = el('div', null, 'pq-page')
-  const nav = el('nav'),
+  const toolbar = el('div', null, 'pq-toolbar'),
+    nav = el('nav'),
     controls = el('div', null, 'pq-controls'),
     content = el('div'),
     status = el('p', null, 'pq-muted')
@@ -120,7 +121,8 @@ function dashboard(ctx, session, cache) {
   const busy = new Set()
   const buttons = pages.map((label, i) => btn(label, () => switchTo(i)))
   nav.append(...buttons)
-  root.append(nav, controls, content, status)
+  toolbar.append(nav, controls)
+  root.append(toolbar, content, status)
   function selection(label, options, value, change) {
     const select = el('select')
     select.setAttribute('aria-label', label)
