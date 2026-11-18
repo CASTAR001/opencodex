@@ -1,4 +1,5 @@
 export const en = {
+  cacheLabel: 'Cache hit', cacheShort: 'Hit', prevShort: 'Prev',
   estimated: 'Estimated visible output', estimateHint: 'Observed text added in the last sample, tokenized locally. Reasoning and tool output are excluded.',
   title: 'Session metrics', recentModel: 'Latest model', unknown: 'Unknown model', all: 'All models',
   model: 'Model', range: 'Period', session: 'Entire session', hour: 'Last hour',
@@ -12,6 +13,7 @@ export const en = {
   speedHint: 'Output and reasoning tokens divided by provider streaming time across the complete turn. While generating, the previous turn is shown when available.',
 }
 export const zh = {
+  cacheLabel: '缓存命中', cacheShort: '命中', prevShort: '上轮',
   estimated: '估算 · 可见输出', estimateHint: '按最近采样区间新增的正文在本机分词，仅统计可见回答。',
   title: '会话统计', recentModel: '最近模型', unknown: '模型未知', all: '全部模型',
   model: '模型', range: '时间范围', session: '整个会话', hour: '最近一小时',

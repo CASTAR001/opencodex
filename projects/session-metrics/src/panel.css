@@ -47,3 +47,27 @@
 .ocx-session-metrics details dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 10px 0 0; }
 .ocx-session-metrics details dd { margin: 0; text-align: end; }
 .ocx-metrics-estimate { margin: 8px 0; font-variant-numeric: tabular-nums; }
+
+.ocx-metrics-header {
+  display: inline-flex;
+  align-items: baseline;
+  flex-shrink: 0;
+  gap: 4px;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--v2-text-text-muted);
+  font: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+.ocx-metrics-header[hidden] { display: none; }
+.ocx-metrics-header strong { color: var(--v2-text-text-base); font-weight: 550; }
+.ocx-metrics-header span:last-child { padding-inline-start: 5px; border-inline-start: 1px solid var(--v2-border-border-muted); }
+.ocx-metrics-header:hover { background: var(--v2-overlay-simple-overlay-hover); }
+.ocx-metrics-header:focus-visible { outline: 2px solid var(--v2-border-border-focus); }

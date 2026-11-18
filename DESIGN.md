@@ -21,7 +21,7 @@ git clone --single-branch --branch plugins/code-block-enhancer https://github.co
 | markdown-presentation | 03 · assistant 正文的排版。第一批后续 |
 | compact-auto-collapse | 04 · 压缩摘要。第三批，先评估原生 |
 | execution-timeline | 05 · 回合中间活动的展示。第三批 |
-| session-metrics | 06 · 会话统计、共享监控标签。alpha.1 已完成安装验证，详见[缓存命中率与 TPS 计划](projects/session-metrics/PLAN.md) |
+| session-metrics | 06 · 会话顶栏常驻显示缓存命中率与 TPS，明细侧栏共享同一份会话数据。alpha.2 已完成安装验证。[开发计划](projects/session-metrics/PLAN.md) |
 | provider-quota | 07 · 套餐额度来源、降级与独立展示。第二批 |
 | file-review-enhancer | 08 · 文件审阅缺口。第四批 |
 

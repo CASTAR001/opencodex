@@ -24,12 +24,8 @@ __export(plugin_exports, {
 module.exports = __toCommonJS(plugin_exports);
 var import_gui2 = require("@opencode/plugin/gui");
 
-// src/panel.js
-var import_solid_js3 = require("solid-js");
-var import_gui = require("@opencode/plugin/gui");
-
 // src/session.js
-var import_solid_js = require("solid-js");
+var import_solid_js2 = require("solid-js");
 
 // src/metrics.js
 function measurement(message) {
@@ -162,59 +158,8 @@ async function historyPrefix(client, sessionID, anchor, signal) {
   return [...rows.values()];
 }
 
-// src/session.js
-function observeSession(session, connected) {
-  const { id, server } = session;
-  const data = server.data.session;
-  const client = server.client;
-  const [prefix, setPrefix] = (0, import_solid_js.createSignal)([]);
-  const [coverage, setCoverage] = (0, import_solid_js.createSignal)(connected ? "loading" : "offline");
-  const [ready, setReady] = (0, import_solid_js.createSignal)(false);
-  const [attempt, setAttempt] = (0, import_solid_js.createSignal)(0);
-  const records = (0, import_solid_js.mapArray)(() => data.message.list(id), (row) => (0, import_solid_js.createMemo)(() => measurement(row)));
-  const live = (0, import_solid_js.createMemo)(() => records().map((read) => read()));
-  const running = () => data.status(id) === "running";
-  const anchor = (0, import_solid_js.createMemo)(() => data.message.more(id) ? data.message.list(id)[0]?.id : void 0);
-  (0, import_solid_js.createEffect)(() => {
-    attempt();
-    if (!connected) return;
-    let active = true;
-    setReady(false);
-    setCoverage("loading");
-    Promise.resolve().then(() => data.message.sync(id)).then(() => {
-      if (active) setReady(true);
-    }).catch(() => {
-      if (active) setCoverage("error");
-    });
-    (0, import_solid_js.onCleanup)(() => {
-      active = false;
-    });
-  });
-  (0, import_solid_js.createEffect)(() => {
-    const first = anchor();
-    if (!ready()) return;
-    setPrefix([]);
-    if (!first) {
-      setCoverage("complete");
-      return;
-    }
-    setCoverage("loading");
-    const controller = new AbortController();
-    (0, import_solid_js.onCleanup)(() => controller.abort());
-    historyPrefix(client, id, first, controller.signal).then((rows2) => {
-      if (controller.signal.aborted) return;
-      setPrefix(rows2);
-      setCoverage("complete");
-    }).catch(() => {
-      if (!controller.signal.aborted) setCoverage("error");
-    });
-  });
-  const rows = (0, import_solid_js.createMemo)(() => mergeHistory(prefix(), live()));
-  return { rows, coverage, running, retry: () => setAttempt((n) => n + 1) };
-}
-
 // src/stream.js
-var import_solid_js2 = require("solid-js");
+var import_solid_js = require("solid-js");
 
 // src/sampling.js
 function supportedModel(model) {
@@ -239,22 +184,24 @@ async function workerURL() {
   })();
   return URL.createObjectURL(await workerSource);
 }
-function visibleRate(session, enabled, selectedModel, cutoff) {
-  const [rate, setRate] = (0, import_solid_js2.createSignal)();
+function visibleRate(session, enabled) {
+  const [rate, setRate] = (0, import_solid_js.createSignal)();
   const data = session.server.data.session;
   const current = () => data.message.list(session.id).at(-1);
-  const target = (0, import_solid_js2.createMemo)(() => {
+  const target = (0, import_solid_js.createMemo)(() => {
     if (!enabled || data.status(session.id) !== "running") return;
     const row = current();
-    if (row?.type !== "assistant" || row.time.streamed != null || row.time.completed != null || !supportedModel(row.model) || row.time.created < cutoff()) return;
-    if (selectedModel() && selectedModel() !== row.model.providerID + "/" + row.model.id) return;
+    if (row?.type !== "assistant" || row.time.streamed != null || row.time.completed != null || !supportedModel(row.model)) return;
     const part = row.content?.at(-1);
     if (part?.type !== "text") return;
-    return JSON.stringify([row.id, row.time.created, row.content.length]);
+    return JSON.stringify([row.id, row.time.created, row.content.length, row.model.providerID, row.model.id]);
   });
-  (0, import_solid_js2.createEffect)(() => {
+  (0, import_solid_js.createEffect)(() => {
     setRate(void 0);
     if (!target()) return;
+    const row = (0, import_solid_js.untrack)(current);
+    const model = row.model.providerID + "/" + row.model.id;
+    const created = row.time.created;
     let active = true, worker, url, timer, previous, elapsed, sent;
     const read = () => current()?.content?.at(-1)?.text ?? "";
     function stop() {
@@ -263,7 +210,7 @@ function visibleRate(session, enabled, selectedModel, cutoff) {
       worker?.terminate();
       if (url) URL.revokeObjectURL(url);
     }
-    (0, import_solid_js2.onCleanup)(stop);
+    (0, import_solid_js.onCleanup)(stop);
     workerURL().then((value) => {
       if (!active) {
         URL.revokeObjectURL(value);
@@ -272,13 +219,15 @@ function visibleRate(session, enabled, selectedModel, cutoff) {
       url = value;
       worker = new Worker(url);
       worker.onerror = () => {
-        setRate(void 0);
-        stop();
+        if (active) {
+          setRate(void 0);
+          stop();
+        }
       };
       worker.onmessage = ({ data: count }) => {
         if (!active) return;
         if (count === "ready") {
-          previous = sampleText(void 0, (0, import_solid_js2.untrack)(read), performance.now()).next;
+          previous = sampleText(void 0, (0, import_solid_js.untrack)(read), performance.now()).next;
           timer = setInterval(() => {
             if (elapsed !== void 0) return;
             const at = performance.now();
@@ -293,7 +242,7 @@ function visibleRate(session, enabled, selectedModel, cutoff) {
             worker.postMessage(sample.delta);
           }, 1e3);
         } else {
-          setRate(elapsed > 0 && performance.now() - sent < 2e3 ? count * 1e3 / elapsed : void 0);
+          setRate(elapsed > 0 && performance.now() - sent < 2e3 ? { tps: count * 1e3 / elapsed, model, created } : void 0);
           elapsed = void 0;
         }
       };
@@ -307,7 +256,132 @@ function visibleRate(session, enabled, selectedModel, cutoff) {
   return rate;
 }
 
+// src/session.js
+function observeSession(session, connected) {
+  const { id, server } = session;
+  const data = server.data.session;
+  const client = server.client;
+  const [prefix, setPrefix] = (0, import_solid_js2.createSignal)([]);
+  const [coverage, setCoverage] = (0, import_solid_js2.createSignal)(connected ? "loading" : "offline");
+  const [ready, setReady] = (0, import_solid_js2.createSignal)(false);
+  const [attempt, setAttempt] = (0, import_solid_js2.createSignal)(0);
+  const records = (0, import_solid_js2.mapArray)(() => data.message.list(id), (row) => (0, import_solid_js2.createMemo)(() => measurement(row)));
+  const live = (0, import_solid_js2.createMemo)(() => records().map((read) => read()));
+  const running = () => data.status(id) === "running";
+  const anchor = (0, import_solid_js2.createMemo)(() => data.message.more(id) ? data.message.list(id)[0]?.id : void 0);
+  (0, import_solid_js2.createEffect)(() => {
+    attempt();
+    if (!connected || session.pending) return;
+    let active = true;
+    setReady(false);
+    setCoverage("loading");
+    Promise.resolve().then(() => data.message.sync(id)).then(() => {
+      if (active) setReady(true);
+    }).catch(() => {
+      if (active) setCoverage("error");
+    });
+    (0, import_solid_js2.onCleanup)(() => {
+      active = false;
+    });
+  });
+  (0, import_solid_js2.createEffect)(() => {
+    const first = anchor();
+    if (!ready()) return;
+    setPrefix([]);
+    if (!first) {
+      setCoverage("complete");
+      return;
+    }
+    setCoverage("loading");
+    const controller = new AbortController();
+    (0, import_solid_js2.onCleanup)(() => controller.abort());
+    historyPrefix(client, id, first, controller.signal).then((rows2) => {
+      if (controller.signal.aborted) return;
+      setPrefix(rows2);
+      setCoverage("complete");
+    }).catch(() => {
+      if (!controller.signal.aborted) setCoverage("error");
+    });
+  });
+  const rows = (0, import_solid_js2.createMemo)(() => mergeHistory(prefix(), live()));
+  const overall = (0, import_solid_js2.createMemo)(() => summarize(rows(), { running: running(), complete: coverage() === "complete" }));
+  const estimate = visibleRate(session, connected && !session.pending);
+  return { rows, coverage, running, overall, estimate, retry: () => setAttempt((n) => n + 1) };
+}
+function createSessionMetrics() {
+  const observed = /* @__PURE__ */ new Map();
+  return function useSession(session) {
+    const { key, id, pending } = session;
+    const { data, client, connected } = session.server;
+    let entry = observed.get(key);
+    if (!entry || entry.data !== data || entry.client !== client || entry.connected !== connected || entry.pending !== pending) {
+      const target = { id, pending, server: { data, client } };
+      entry = (0, import_solid_js2.createRoot)((dispose) => ({
+        data,
+        client,
+        connected,
+        pending,
+        dispose,
+        readers: 0,
+        source: observeSession(target, connected)
+      }), null);
+      observed.set(key, entry);
+    }
+    entry.readers++;
+    (0, import_solid_js2.onCleanup)(() => {
+      if (--entry.readers) return;
+      entry.dispose();
+      if (observed.get(key) === entry) observed.delete(key);
+    });
+    return entry.source;
+  };
+}
+
+// src/header.js
+var import_solid_js3 = require("solid-js");
+function header(ctx, input, useSession, open) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "ocx-metrics-header";
+  const label = document.createElement("span");
+  const hit = document.createElement("strong");
+  const speed = document.createElement("span");
+  button.append(label, hit, speed);
+  button.onclick = () => open(input.session);
+  (0, import_solid_js3.createEffect)(() => {
+    button.hidden = !input.active;
+    if (!input.active) return;
+    const source = useSession(input.session);
+    const locale = ctx.locale.locale();
+    const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+    const percent = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
+    (0, import_solid_js3.createEffect)(() => {
+      const { hit: ratio, speed: turn, previous, missing } = source.overall();
+      const estimate = source.estimate();
+      const coverage = source.coverage();
+      const t = (key) => ctx.t(key);
+      const cache = ratio == null ? "\u2014" : percent.format(ratio);
+      const rate = estimate?.tps ?? turn?.tps;
+      const value = (rate == null ? "\u2014" : number.format(rate)) + " TPS";
+      const partial = coverage !== "complete";
+      label.textContent = t(input.compact ? "cacheShort" : "cacheLabel");
+      hit.textContent = cache + (partial && ratio != null ? "*" : "");
+      speed.textContent = (estimate ? "\u2248" : previous && turn ? t("prevShort") + " " : "") + value;
+      const hint = [t("hit") + " " + cache, t(estimate ? "estimated" : previous ? "previous" : "recent") + " " + value];
+      if (partial) hint.push(t(coverage));
+      if (source.running()) hint.push(t("generating"));
+      if (turn?.includesWait && !estimate) hint.push(t("wait"));
+      if (missing) hint.push(t("missing") + " \xB7 " + missing);
+      button.title = [t("title"), ...hint].join(" \xB7 ");
+      button.setAttribute("aria-label", button.title);
+    });
+  });
+  return button;
+}
+
 // src/panel.js
+var import_solid_js4 = require("solid-js");
+var import_gui = require("@opencode/plugin/gui");
 function element(tag, text) {
   const node = document.createElement(tag);
   if (text !== void 0) node.textContent = text;
@@ -329,16 +403,14 @@ function stat(grid, label, hint) {
   grid.append(field);
   return { title, value };
 }
-function mount(root, ctx, session, connected, locale) {
+function mount(root, ctx, source, locale) {
   const t = (key) => ctx.t(key);
   const digits = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
   const ratio = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
-  const source = observeSession(session, connected);
-  const [model, setModel] = (0, import_solid_js3.createSignal)("");
-  const [period, setPeriod] = (0, import_solid_js3.createSignal)("session");
-  const [now, setNow] = (0, import_solid_js3.createSignal)(Date.now());
+  const [model, setModel] = (0, import_solid_js4.createSignal)("");
+  const [period, setPeriod] = (0, import_solid_js4.createSignal)("session");
+  const [now, setNow] = (0, import_solid_js4.createSignal)(Date.now());
   const cutoff = () => period() === "hour" ? now() - 36e5 : -Infinity;
-  const liveRate = visibleRate(session, connected, model, cutoff);
   const modelName = (id) => id === "?" ? t("unknown") : id || "\u2014";
   const modelLine = element("p");
   modelLine.className = "ocx-metrics-model";
@@ -366,8 +438,9 @@ function mount(root, ctx, session, connected, locale) {
   const estimate = element("p");
   estimate.className = "ocx-metrics-estimate";
   estimate.title = t("estimateHint");
-  (0, import_solid_js3.createEffect)(() => {
-    const rate = liveRate();
+  (0, import_solid_js4.createEffect)(() => {
+    const sample = source.estimate();
+    const rate = sample && (!model() || sample.model === model()) && sample.created >= cutoff() ? sample.tps : void 0;
     estimate.hidden = rate == null;
     estimate.textContent = rate == null ? "" : t("estimated") + " \xB7 " + digits.format(rate) + " TPS";
   });
@@ -387,7 +460,7 @@ function mount(root, ctx, session, connected, locale) {
   }
   details.append(element("summary", t("reported")), list);
   root.replaceChildren(modelLine, stats, estimate, filters, status, retry, details);
-  (0, import_solid_js3.createEffect)(() => {
+  (0, import_solid_js4.createEffect)(() => {
     if (period() !== "hour") return;
     const instant = Date.now();
     const boundary = source.rows().reduce((next, row) => {
@@ -397,12 +470,12 @@ function mount(root, ctx, session, connected, locale) {
     now();
     if (boundary === Infinity) return;
     const timer2 = setTimeout(() => setNow(Date.now()), Math.min(2147483647, boundary - instant));
-    (0, import_solid_js3.onCleanup)(() => clearTimeout(timer2));
+    (0, import_solid_js4.onCleanup)(() => clearTimeout(timer2));
   });
   let modelOptions = "";
   let timer;
   let lastPaint = -Infinity;
-  (0, import_solid_js3.createEffect)(() => {
+  (0, import_solid_js4.createEffect)(() => {
     const rows = source.rows();
     const selected = model();
     const hour = period() === "hour";
@@ -411,7 +484,7 @@ function mount(root, ctx, session, connected, locale) {
     const coverage = source.coverage();
     function paint() {
       lastPaint = performance.now();
-      const r = summarize(rows, {
+      const r = !selected && !hour ? source.overall() : summarize(rows, {
         model: selected,
         since: hour ? end - 1 - 36e5 : -Infinity,
         until: end,
@@ -452,28 +525,30 @@ function mount(root, ctx, session, connected, locale) {
     if (delay > 0) timer = setTimeout(paint, delay);
     else paint();
   });
-  (0, import_solid_js3.onCleanup)(() => clearTimeout(timer));
+  (0, import_solid_js4.onCleanup)(() => clearTimeout(timer));
 }
-function panel(ctx, props) {
+function panel(ctx, props, useSession) {
   const frame = (0, import_gui.usePanel)();
   const root = element("section");
   root.className = "ocx-session-metrics";
-  (0, import_solid_js3.createEffect)(() => {
+  (0, import_solid_js4.createEffect)(() => {
     if (!frame.visible()) {
       root.replaceChildren();
       return;
     }
     const session = props.session;
     const locale = ctx.locale.locale();
-    const { data, client, connected } = session.server;
-    const target = { id: session.id, key: session.key, server: { data, client } };
-    (0, import_solid_js3.untrack)(() => mount(root, ctx, target, connected, locale));
+    const source = useSession(session);
+    (0, import_solid_js4.untrack)(() => mount(root, ctx, source, locale));
   });
   return root;
 }
 
 // src/labels.js
 var en = {
+  cacheLabel: "Cache hit",
+  cacheShort: "Hit",
+  prevShort: "Prev",
   estimated: "Estimated visible output",
   estimateHint: "Observed text added in the last sample, tokenized locally. Reasoning and tool output are excluded.",
   title: "Session metrics",
@@ -507,6 +582,9 @@ var en = {
   speedHint: "Output and reasoning tokens divided by provider streaming time across the complete turn. While generating, the previous turn is shown when available."
 };
 var zh = {
+  cacheLabel: "\u7F13\u5B58\u547D\u4E2D",
+  cacheShort: "\u547D\u4E2D",
+  prevShort: "\u4E0A\u8F6E",
   estimated: "\u4F30\u7B97 \xB7 \u53EF\u89C1\u8F93\u51FA",
   estimateHint: "\u6309\u6700\u8FD1\u91C7\u6837\u533A\u95F4\u65B0\u589E\u7684\u6B63\u6587\u5728\u672C\u673A\u5206\u8BCD\uFF0C\u4EC5\u7EDF\u8BA1\u53EF\u89C1\u56DE\u7B54\u3002",
   title: "\u4F1A\u8BDD\u7EDF\u8BA1",
@@ -541,7 +619,7 @@ var zh = {
 };
 
 // src/panel.css
-var panel_default = ".ocx-session-metrics {\n  box-sizing: border-box;\n  width: 100%;\n  height: 100%;\n  min-width: 0;\n  padding: 16px;\n  overflow: auto;\n  font: inherit;\n  font-size: 13px;\n  color: var(--v2-text-text-base);\n  background: var(--v2-background-bg-base);\n  font-variant-numeric: tabular-nums;\n}\n.ocx-session-metrics * { box-sizing: border-box; }\n.ocx-session-metrics [hidden] { display: none; }\n.ocx-metrics-model { display: grid; gap: 3px; margin: 0 0 14px; overflow-wrap: anywhere; }\n.ocx-metrics-model span, .ocx-session-metrics dt, .ocx-metrics-filters label > span,\n.ocx-session-metrics [role=status] { color: var(--v2-text-text-muted); }\n.ocx-metrics-model strong { font-size: 14px; font-weight: 600; }\n.ocx-metrics-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; gap: 8px; }\n.ocx-metrics-stats > div, .ocx-session-metrics details {\n  padding: 10px 12px;\n  background: var(--v2-background-bg-layer-01);\n  border: 1px solid var(--v2-border-border-muted);\n  border-radius: 8px;\n}\n.ocx-metrics-stats dd { margin: 3px 0; font-size: 21px; line-height: 1.25; font-weight: 600; }\n.ocx-session-metrics meter { width: 100%; height: 6px; display: block; appearance: none; }\n.ocx-session-metrics meter::-webkit-meter-bar { background: var(--v2-border-border-muted); border: 0; border-radius: 5px; }\n.ocx-session-metrics meter::-webkit-meter-optimum-value { background: var(--v2-background-bg-accent); border-radius: 5px; }\n.ocx-metrics-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }\n.ocx-metrics-filters label { display: grid; flex: 1 1 96px; min-width: 0; gap: 3px; }\n.ocx-metrics-filters select, .ocx-session-metrics button {\n  font: inherit;\n  color: inherit;\n  background: var(--v2-background-bg-layer-01);\n  padding: 4px 6px;\n  border: 1px solid var(--v2-border-border-muted);\n  border-radius: 5px;\n}\n.ocx-metrics-filters select { width: 100%; text-overflow: ellipsis; }\n.ocx-session-metrics :is(button, select, summary):focus-visible { outline: 2px solid var(--v2-border-border-focus); }\n.ocx-session-metrics summary, .ocx-session-metrics button { cursor: pointer; }\n.ocx-session-metrics summary { display: list-item; font-weight: 500; }\n.ocx-session-metrics [role=status] { margin: 0 0 8px; }\n.ocx-session-metrics button { margin-bottom: 8px; }\n.ocx-session-metrics details dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 10px 0 0; }\n.ocx-session-metrics details dd { margin: 0; text-align: end; }\n.ocx-metrics-estimate { margin: 8px 0; font-variant-numeric: tabular-nums; }\n";
+var panel_default = ".ocx-session-metrics {\n  box-sizing: border-box;\n  width: 100%;\n  height: 100%;\n  min-width: 0;\n  padding: 16px;\n  overflow: auto;\n  font: inherit;\n  font-size: 13px;\n  color: var(--v2-text-text-base);\n  background: var(--v2-background-bg-base);\n  font-variant-numeric: tabular-nums;\n}\n.ocx-session-metrics * { box-sizing: border-box; }\n.ocx-session-metrics [hidden] { display: none; }\n.ocx-metrics-model { display: grid; gap: 3px; margin: 0 0 14px; overflow-wrap: anywhere; }\n.ocx-metrics-model span, .ocx-session-metrics dt, .ocx-metrics-filters label > span,\n.ocx-session-metrics [role=status] { color: var(--v2-text-text-muted); }\n.ocx-metrics-model strong { font-size: 14px; font-weight: 600; }\n.ocx-metrics-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; gap: 8px; }\n.ocx-metrics-stats > div, .ocx-session-metrics details {\n  padding: 10px 12px;\n  background: var(--v2-background-bg-layer-01);\n  border: 1px solid var(--v2-border-border-muted);\n  border-radius: 8px;\n}\n.ocx-metrics-stats dd { margin: 3px 0; font-size: 21px; line-height: 1.25; font-weight: 600; }\n.ocx-session-metrics meter { width: 100%; height: 6px; display: block; appearance: none; }\n.ocx-session-metrics meter::-webkit-meter-bar { background: var(--v2-border-border-muted); border: 0; border-radius: 5px; }\n.ocx-session-metrics meter::-webkit-meter-optimum-value { background: var(--v2-background-bg-accent); border-radius: 5px; }\n.ocx-metrics-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }\n.ocx-metrics-filters label { display: grid; flex: 1 1 96px; min-width: 0; gap: 3px; }\n.ocx-metrics-filters select, .ocx-session-metrics button {\n  font: inherit;\n  color: inherit;\n  background: var(--v2-background-bg-layer-01);\n  padding: 4px 6px;\n  border: 1px solid var(--v2-border-border-muted);\n  border-radius: 5px;\n}\n.ocx-metrics-filters select { width: 100%; text-overflow: ellipsis; }\n.ocx-session-metrics :is(button, select, summary):focus-visible { outline: 2px solid var(--v2-border-border-focus); }\n.ocx-session-metrics summary, .ocx-session-metrics button { cursor: pointer; }\n.ocx-session-metrics summary { display: list-item; font-weight: 500; }\n.ocx-session-metrics [role=status] { margin: 0 0 8px; }\n.ocx-session-metrics button { margin-bottom: 8px; }\n.ocx-session-metrics details dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 10px 0 0; }\n.ocx-session-metrics details dd { margin: 0; text-align: end; }\n.ocx-metrics-estimate { margin: 8px 0; font-variant-numeric: tabular-nums; }\n\n.ocx-metrics-header {\n  display: inline-flex;\n  align-items: baseline;\n  flex-shrink: 0;\n  gap: 4px;\n  padding: 3px 6px;\n  border: 0;\n  border-radius: 5px;\n  background: transparent;\n  color: var(--v2-text-text-muted);\n  font: inherit;\n  font-size: 12px;\n  line-height: 18px;\n  font-variant-numeric: tabular-nums;\n  white-space: nowrap;\n  cursor: pointer;\n  -webkit-app-region: no-drag;\n}\n.ocx-metrics-header[hidden] { display: none; }\n.ocx-metrics-header strong { color: var(--v2-text-text-base); font-weight: 550; }\n.ocx-metrics-header span:last-child { padding-inline-start: 5px; border-inline-start: 1px solid var(--v2-border-border-muted); }\n.ocx-metrics-header:hover { background: var(--v2-overlay-simple-overlay-hover); }\n.ocx-metrics-header:focus-visible { outline: 2px solid var(--v2-border-border-focus); }\n";
 
 // src/plugin.js
 var plugin_default = import_gui2.Plugin.define({
@@ -550,7 +628,10 @@ var plugin_default = import_gui2.Plugin.define({
     const tab = { id: "metrics", get title() {
       return ctx.t("title");
     } };
+    const useSession = createSessionMetrics();
+    const open = (session) => ctx.layout.open(ctx.id + ":" + tab.id, session);
     ctx.add(import_gui2.Style, panel_default);
+    ctx.add(import_gui2.Slot, { at: "session.header", order: 5, render: (input) => header(ctx, input, useSession, open) });
     ctx.add(import_gui2.Panel, {
       id: tab.id,
       region: "side",
@@ -558,8 +639,8 @@ var plugin_default = import_gui2.Plugin.define({
       mobile: { get title() {
         return tab.title;
       }, kind: "menu", order: 55, icon: "status" },
-      list: ({ open }) => open.includes(tab.id) ? [tab] : [],
-      render: (props) => panel(ctx, props)
+      list: ({ open: open2 }) => open2.includes(tab.id) ? [tab] : [],
+      render: (props) => panel(ctx, props, useSession)
     });
     ctx.add(import_gui2.MenuItem, {
       menu: "session.panel",
@@ -571,7 +652,7 @@ var plugin_default = import_gui2.Plugin.define({
       order: 55,
       run() {
         const session = ctx.sessions.current();
-        if (session) ctx.layout.open(ctx.id + ":" + tab.id, session);
+        if (session) open(session);
       }
     });
   }

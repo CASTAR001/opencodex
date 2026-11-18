@@ -1,6 +1,6 @@
 # OpenCodex · OpenCode Desktop 插件合集
 
-面向 macOS OpenCode Desktop 2.3.2 的模块化界面增强项目。代码块插件 02 已完成 `0.1.0-alpha.3` 本机试用，会话统计插件 06 的首个可安装版本为 `0.1.0-alpha.1`。
+面向 macOS OpenCode Desktop 2.3.2 的模块化界面增强项目。代码块插件 02 已完成 `0.1.0-alpha.3` 本机试用。会话统计插件 06 在会话顶栏常驻显示缓存命中率和 TPS，点击读数可打开明细。
 
 - [功能需求与开发顺序](REQUIREMENTS.md)
 - [逐项可行性与源码依据](FEASIBILITY.md)
@@ -17,7 +17,7 @@
 | 03 | [Markdown Presentation Enhancer](projects/markdown-presentation/README.md) | 预研 |
 | 04 | [Compact Auto Collapse](projects/compact-auto-collapse/README.md) | 预研 |
 | 05 | [Execution Timeline Auto Collapse](projects/execution-timeline/README.md) | 预研 |
-| 06 | [Session Metrics Monitor](projects/session-metrics/README.md) | `0.1.0-alpha.1`，可安装 |
+| 06 | [Session Metrics Monitor](projects/session-metrics/README.md) | `0.1.0-alpha.2`，本机试用 |
 | 07 | [Provider Quota Monitor](projects/provider-quota/README.md) | 预研 |
 | 08 | [File Review Enhancer](projects/file-review-enhancer/README.md) | 预研 |
 

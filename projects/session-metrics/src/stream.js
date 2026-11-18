@@ -13,7 +13,7 @@ async function workerURL() {
   return URL.createObjectURL(await workerSource)
 }
 
-export function visibleRate(session, enabled, selectedModel, cutoff) {
+export function visibleRate(session, enabled) {
   const [rate, setRate] = createSignal()
   const data = session.server.data.session
   const current = () => data.message.list(session.id).at(-1)
@@ -21,15 +21,17 @@ export function visibleRate(session, enabled, selectedModel, cutoff) {
     if (!enabled || data.status(session.id) !== 'running') return
     const row = current()
     if (row?.type !== 'assistant' || row.time.streamed != null || row.time.completed != null ||
-        !supportedModel(row.model) || row.time.created < cutoff()) return
-    if (selectedModel() && selectedModel() !== row.model.providerID + '/' + row.model.id) return
+        !supportedModel(row.model)) return
     const part = row.content?.at(-1)
     if (part?.type !== 'text') return
-    return JSON.stringify([row.id, row.time.created, row.content.length])
+    return JSON.stringify([row.id, row.time.created, row.content.length, row.model.providerID, row.model.id])
   })
   createEffect(() => {
     setRate(undefined)
     if (!target()) return
+    const row = untrack(current)
+    const model = row.model.providerID + '/' + row.model.id
+    const created = row.time.created
     let active = true, worker, url, timer, previous, elapsed, sent
     const read = () => current()?.content?.at(-1)?.text ?? ''
     function stop() {
@@ -43,7 +45,7 @@ export function visibleRate(session, enabled, selectedModel, cutoff) {
       if (!active) { URL.revokeObjectURL(value); return }
       url = value
       worker = new Worker(url)
-      worker.onerror = () => { setRate(undefined); stop() }
+      worker.onerror = () => { if (active) { setRate(undefined); stop() } }
       worker.onmessage = ({ data: count }) => {
         if (!active) return
         if (count === 'ready') {
@@ -59,7 +61,7 @@ export function visibleRate(session, enabled, selectedModel, cutoff) {
             worker.postMessage(sample.delta)
           }, 1000)
         } else {
-          setRate(elapsed > 0 && performance.now() - sent < 2000 ? count * 1000 / elapsed : undefined)
+          setRate(elapsed > 0 && performance.now() - sent < 2000 ? { tps: count * 1000 / elapsed, model, created } : undefined)
           elapsed = undefined
         }
       }
