@@ -68,6 +68,6 @@
 }
 .ocx-metrics-header[hidden] { display: none; }
 .ocx-metrics-header strong { color: var(--v2-text-text-base); font-weight: 550; }
-.ocx-metrics-header span:last-child { padding-inline-start: 5px; border-inline-start: 1px solid var(--v2-border-border-muted); }
+.ocx-metrics-header span:nth-last-child(-n+2) { padding-inline-start: 5px; border-inline-start: 1px solid var(--v2-border-border-muted); }
 .ocx-metrics-header:hover { background: var(--v2-overlay-simple-overlay-hover); }
 .ocx-metrics-header:focus-visible { outline: 2px solid var(--v2-border-border-focus); }

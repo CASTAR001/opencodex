@@ -40,6 +40,14 @@ function mount(root, ctx, source, locale) {
   modelLine.className = 'ocx-metrics-model'
   const modelValue = element('strong')
   modelLine.append(element('span', t('recentModel')), modelValue)
+  const windowUsage = element('span')
+  windowUsage.title = t('contextHint')
+  modelLine.append(windowUsage)
+  createEffect(() => {
+    const value = source.context()
+    windowUsage.textContent = t('context') + ' ' + (value?.percent == null ? '—' : ratio.format(value.percent / 100)) +
+      (value ? ' · ' + digits.format(value.used) + ' / ' + (value.limit > 0 ? digits.format(value.limit) : '—') : '')
+  })
   const filters = element('div')
   filters.className = 'ocx-metrics-filters'
   const models = select(t('model'), [['', t('all')]])
@@ -74,9 +82,11 @@ function mount(root, ctx, source, locale) {
   details.open = true
   const list = element('dl')
   const counters = new Map()
-  for (const key of ['total','input','read','write','output','reasoning','compaction']) {
+  for (const key of ['lastHit','average','ttft','trend','total','input','read','write','output','reasoning','compaction']) {
     const value = element('dd')
-    list.append(element('dt', t(key)), value)
+    const label = element('dt', t(key))
+    if (key === 'lastHit') label.title = t('callHint')
+    list.append(label, value)
     counters.set(key, value)
   }
   details.append(element('summary', t('reported')), list)
@@ -133,7 +143,18 @@ function mount(root, ctx, source, locale) {
       status.hidden = !note
       retry.hidden = coverage !== 'error'
       const counts = { ...r.totals, total: r.inputTotal, compaction: r.compactionTokens }
-      for (const [key, node] of counters) node.textContent = r.counted ? digits.format(counts[key]) : '—'
+      for (const [key, count] of Object.entries(counts)) counters.get(key).textContent = r.counted ? digits.format(count) : '—'
+      const delta = r.hitChange == null || Math.abs(r.hitChange) < 0.0005 ? '' :
+        ' ' + (r.hitChange > 0 ? '↑' : '↓') + digits.format(Math.abs(r.hitChange) * 100) + ' pp'
+      counters.get('lastHit').textContent = r.lastHit == null ? '—' : ratio.format(r.lastHit) + delta
+      counters.get('average').textContent = r.average == null ? '—' : digits.format(r.average) + ' TPS'
+      counters.get('ttft').textContent = r.ttft == null ? '—' : digits.format(r.ttft) + ' ms'
+      const rates = r.recentRates
+      const trend = counters.get('trend')
+      const max = Math.max(...rates)
+      trend.textContent = rates.length < 2 ? '—' : rates.map(rate => '▁▂▃▄▅▆▇█'[Math.round(rate / max * 7)]).join('')
+      trend.title = rates.map(rate => digits.format(rate)).join(' → ') + (rates.length ? ' TPS' : '')
+      trend.setAttribute('aria-label', trend.title || '—')
     }
     clearTimeout(timer)
     const delay = running ? 250 - (performance.now() - lastPaint) : 0

@@ -1,19 +1,17 @@
 # Session Metrics Monitor
 
-**0.1.0-alpha.2** 适用于 macOS OpenCode Desktop **2.3.2**。打开已有会话即可在标题行右侧、原生上下文用量旁看到 **缓存命中率和 TPS**。顶栏统计整个当前会话，窄窗会缩短标签。点击读数或在键盘聚焦后按 Enter，可查看 Token 明细并按模型、时间筛选。侧栏筛选仅作用于明细。
+**0.1.0-alpha.3** 适用于 macOS OpenCode Desktop **2.3.2**。会话顶栏常驻显示缓存命中率、TPS 和上下文使用率。点击读数或聚焦后按 Enter 可打开明细，按模型、时间筛选。
 
-## 怎样读数
-
-| 指标 | 计算范围 |
+| 顶栏读数 | 怎样计算 |
 |---|---|
-| 缓存命中率 | 所选步骤的缓存读取总数 ÷（未缓存输入 + 缓存读取 + 缓存写入）。有输入且没有缓存读取时显示 0%，分母为零时显示「—」。 |
-| 最近回合 TPS | 将完整回合所有 assistant 步骤的可见输出和推理 token 相加，除以各步骤从首 token 到响应体结束的总秒数。工具等待时间独立于生成时间。旧数据缺少首 token 时间时标记「含首 token 等待」。 |
-| 估算 · 可见输出 | 对 `openai` 提供商中支持的 GPT-4o、GPT-4.1、GPT-5 系列模型，会话可见且收到正文时，在本机 Worker 中对约一秒新增的文字用 `o200k_base` 分词。已有正文、工具调用和推理内容都不进入采样。采样边界可能切开 token，因此读数为估算。暂停输出、模型不匹配和采样不足时隐藏估值。 |
-| Token 明细 | 汇总当前会话。失败步骤有用量时计入，缺少用量时标明步骤数。压缩请求包含在总量中，并在明细单列。父、子会话各自统计。宿主可能将供应商未上报的单项记录为零。 |
+| 缓存命中率 | 当前会话全部已知步骤的缓存读取 ÷（未缓存输入 + 缓存读取 + 缓存写入）。宿主上报新用量时刷新。分母为零时显示「—」，历史未加载完整时标星。 |
+| 生成中 `≈ TPS` | 采用参考 TUI 的估算法，对所有供应商每秒刷新。当前步骤已收到的字符数按每四个 UTF-16 单位约一个 token 折算，除以从首 token 开始的秒数。缺少首 token 时间时从请求开始计时。收到输出且计时满半秒后可以显示，精度随模型、语言及内容变化。 |
+| 已结算 TPS | 回合结束后，按宿主上报的可见输出与推理 token 总数除以各步骤生成时间之和。下一回合等待首个估算值时，若有上一回合结算值，会标「上轮」。 |
+| 上下文 | 使用 Desktop 原生算法，读取最近一次有效模型调用的输入、输出、推理和缓存读写总数，除以该步骤模型在当前目录的上下文窗口。悬停可看已用量和窗口大小。宿主上报用量时更新；压缩后等待下一次有效记录，未知窗口或用量显示「—」。 |
 
-顶栏的 `≈` 表示可见输出速度估算。「上轮」指上一回合已结算的速度。对 Kimi 等暂未适配流式分词的模型，回合结束后根据宿主上报的 token 和时间计算 TPS；缺少所需数据时显示「—」。模型或时间筛选只覆盖半个回合时，该回合的速度显示「—」。历史仍在加载或断开连接时，数字旁标记「部分统计」。分页失败可在面板重试。顶栏数值后的星号提示历史尚不完整，悬停可查看原因。顶栏和详情共享同一份数据与采样器，离开会话后释放。插件只使用当前 Desktop 的会话接口，分词在本机完成。
+明细保留模型及时间筛选、输入／输出与缓存读写总数，并展示最近调用命中率、同模型两次调用的变化（百分点）、加权平均 TPS、最近 12 次调用的速度走势及首 token 耗时。最近调用命中率沿用 TUI 的「读取 ÷（读取 + 未缓存输入）」口径。顶栏始终统计当前会话；侧栏另有筛选时，上下文仍显示实际会话的模型窗口。
 
-统计层与界面分开、分别处理逐次生成速度和累计用量的思路参考了 TUI 项目。Desktop 实现使用公开的 `session.header` 插槽、GUI Panel、当前服务器的消息快照，以及 OpenCode 2.3.2 的回合边界。[TUI 参考实现](https://github.com/zhumengzhu/opencode-cache-hit/blob/main/src/use-cache-hit-metrics.ts) · [Desktop 回合速度](https://github.com/anomalyco/opencode/blob/c0ad18b402eb2827fc1ee71c171b1177b3fc02d1/packages/util/src/session-turn.ts) · [OpenAI 模型编码映射](https://github.com/openai/tiktoken/blob/main/tiktoken/model.py) · [编码对照样例](https://developers.openai.com/cookbook/examples/how_to_count_tokens_with_tiktoken)
+实时采样仅在会话可见且正在生成时运行。正文、宿主可见的推理文本和流式工具参数均可参与估算；工具执行结果和执行时间排除在实时采样之外。缺少用量的步骤、部分历史与数据重试可在明细查看。所有统计使用当前 Desktop 已收到的数据。[TUI 实时算法](https://github.com/zhumengzhu/opencode-cache-hit/blob/453ac68de99e05fb00a3bd58b33887da79c2d91c/src/token-speed.ts#L80) · [Desktop 上下文计算](https://github.com/anomalyco/opencode/blob/c0ad18b402eb2827fc1ee71c171b1177b3fc02d1/packages/gui-plugins/src/context/indicator.tsx#L49)
 
 ## 安装与回退
 
@@ -21,7 +19,7 @@
 
 ## 构建与测试
 
-在组件根目录运行以下命令。发行包自带 GUI bundle 和分词表，Desktop 安装时只需要解包后的文件。
+在组件根目录运行以下命令。发行包自带 GUI bundle，Desktop 安装时只需要解包后的文件。
 
 ```sh
 npm ci
@@ -30,4 +28,4 @@ npm test
 npm pack
 ```
 
-插件使用实验性 GUI 入口。升级宿主后应复测会话切换、历史分页、原生回合 TPS 及 Worker 采样。[开发与验收计划](PLAN.md) · [第三方许可](THIRD_PARTY_NOTICES.txt)
+插件使用实验性 GUI 入口。升级宿主后应复测会话切换、历史分页、原生回合 TPS 及 多供应商流式采样、模型窗口和压缩边界。[开发与验收计划](PLAN.md) · [第三方许可](THIRD_PARTY_NOTICES.txt)

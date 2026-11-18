@@ -1,15 +1,20 @@
-export function supportedModel(model) {
-  return model?.providerID === 'openai' &&
-    /^(?:gpt-4o(?:-mini)?|gpt-4\.1(?:-mini|-nano)?|gpt-5(?:\.\d+)?(?:-mini|-nano|-pro|-codex)?)(?:-\d{4}-\d{2}-\d{2})?$/.test(model.id)
+// Match opencode-cache-hit 1.0.0's estimateStreamingSpeed without building a joined
+// copy of the response. Length is measured in UTF-16 code units, as in the TUI.
+export function streamingSpeed(length, created, first, now) {
+  const elapsed = now - (first > created ? first : created)
+  if (!length || !Number.isFinite(elapsed) || elapsed < 500) return
+  return Math.max(1, Math.round(length / 4)) / (elapsed / 1000)
 }
 
-// Sample visible text in bounded intervals. A pre-existing prefix seen on mount contributes zero.
-export function sampleText(previous, text, at) {
-  const length = text.length
-  const next = { length, suffix: text.slice(-32), at }
-  if (!previous || length <= previous.length || length - previous.length > 2048 ||
-      text.slice(Math.max(0, previous.length - 32), previous.length) !== previous.suffix) return { next }
-  const elapsed = at - previous.at
-  if (elapsed < 250 || elapsed > 4000) return { next }
-  return { next, delta: text.slice(previous.length), elapsed }
+export function generatedLength(parts, toolLengths) {
+  let length = 0
+  for (const part of parts) {
+    if (part.type === 'text' || part.type === 'reasoning') length += part.text.length
+    if (part.type !== 'tool') continue
+    // Desktop discards the raw argument string when execution begins. Preserve its
+    // observed length, never count execution results or serialize parsed arguments.
+    if (part.state.status === 'streaming') toolLengths.set(part.id, part.state.input.length)
+    length += toolLengths.get(part.id) ?? 0
+  }
+  return length
 }
