@@ -20,6 +20,7 @@
 | 06 | [Session Metrics Monitor](projects/session-metrics/README.md) | `0.1.0-alpha.3`，本机试用 |
 | 07 | [Provider Quota Monitor](projects/provider-quota/README.md) | `0.1.0-alpha.2`，已通过 macOS 本机验收。对话顶栏可查看用量和手动刷新额度 |
 | 08 | [File Review Enhancer](projects/file-review-enhancer/README.md) | 预研 |
+| 09 | [Bilingual Fonts](projects/bilingual-fonts/README.md) | `0.1.0-alpha.1`，已通过 macOS 本机验收。界面正文和代码可分别设置中西文字体 |
 
 ## 安装验证工具
 

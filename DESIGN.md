@@ -24,6 +24,7 @@ git clone --single-branch --branch plugins/code-block-enhancer https://github.co
 | session-metrics | 06 · 会话顶栏常驻显示缓存命中率、跨模型实时 TPS 和上下文使用率，明细侧栏共享同一份会话数据。alpha.3 已完成安装验证。[开发计划](projects/session-metrics/PLAN.md) |
 | provider-quota | 07 · 对话顶栏的统计图标打开独立用量页，按当前连接显示服务商，用量从本机历史统计，账户额度由用户手动刷新。alpha.2 已通过本机验收。 |
 | file-review-enhancer | 08 · 文件审阅缺口。第四批 |
+| bilingual-fonts | 09 · 独立的中西文字体设置页。初始跟随 OpenCode，用户选择保存在本机。 |
 
 ## 消息渲染分工
 
