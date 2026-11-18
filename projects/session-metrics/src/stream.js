@@ -1,17 +1,5 @@
 import { createEffect, createMemo, createSignal, onCleanup, untrack } from 'solid-js'
-
-import { supportedModel, sampleText } from './sampling.js'
-
-let workerSource
-async function workerURL() {
-  // The Desktop host serves one GUI entry. Decompress the embedded worker only for supported active models.
-  workerSource ??= (async () => {
-    const compressed = Uint8Array.from(atob(__OCX_WORKER_GZIP__), c => c.charCodeAt(0))
-    const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'))
-    return new Blob([await new Response(stream).arrayBuffer()], { type: 'text/javascript' })
-  })()
-  return URL.createObjectURL(await workerSource)
-}
+import { generatedLength, streamingSpeed } from './sampling.js'
 
 export function visibleRate(session, enabled) {
   const [rate, setRate] = createSignal()
@@ -20,52 +8,29 @@ export function visibleRate(session, enabled) {
   const target = createMemo(() => {
     if (!enabled || data.status(session.id) !== 'running') return
     const row = current()
-    if (row?.type !== 'assistant' || row.time.streamed != null || row.time.completed != null ||
-        !supportedModel(row.model)) return
-    const part = row.content?.at(-1)
-    if (part?.type !== 'text') return
-    return JSON.stringify([row.id, row.time.created, row.content.length, row.model.providerID, row.model.id])
+    if (row?.type === 'assistant' && !row.retry && !row.error && row.time.streamed == null && row.time.completed == null) {
+      return JSON.stringify([row.id, row.time.created, row.model.providerID, row.model.id])
+    }
   })
   createEffect(() => {
     setRate(undefined)
     if (!target()) return
-    const row = untrack(current)
-    const model = row.model.providerID + '/' + row.model.id
-    const created = row.time.created
-    let active = true, worker, url, timer, previous, elapsed, sent
-    const read = () => current()?.content?.at(-1)?.text ?? ''
-    function stop() {
-      active = false
-      clearInterval(timer)
-      worker?.terminate()
-      if (url) URL.revokeObjectURL(url)
+    const toolLengths = new Map()
+    function tick() {
+      const row = current()
+      const parts = row.content
+      const tail = parts.at(-1)
+      const length = generatedLength(parts, toolLengths)
+      if (tail?.type === 'tool' && tail.state.status !== 'streaming') { setRate(undefined); return }
+      const { created, firstToken } = row.time
+      const tps = streamingSpeed(length, created, firstToken, Date.now())
+      setRate(tps == null ? undefined : { tps, model: row.model.providerID + '/' + row.model.id, created })
     }
-    onCleanup(stop)
-    workerURL().then(value => {
-      if (!active) { URL.revokeObjectURL(value); return }
-      url = value
-      worker = new Worker(url)
-      worker.onerror = () => { if (active) { setRate(undefined); stop() } }
-      worker.onmessage = ({ data: count }) => {
-        if (!active) return
-        if (count === 'ready') {
-          previous = sampleText(undefined, untrack(read), performance.now()).next
-          timer = setInterval(() => {
-            if (elapsed !== undefined) return
-            const at = performance.now()
-            const sample = sampleText(previous, read(), at)
-            previous = sample.next
-            if (!sample.delta) { setRate(undefined); return }
-            elapsed = sample.elapsed
-            sent = at
-            worker.postMessage(sample.delta)
-          }, 1000)
-        } else {
-          setRate(elapsed > 0 && performance.now() - sent < 2000 ? { tps: count * 1000 / elapsed, model, created } : undefined)
-          elapsed = undefined
-        }
-      }
-    }).catch(() => { if (active) { setRate(undefined); stop() } })
+    // Read the live Solid store at display cadence, including when opening a running
+    // session halfway through a reply. Text deltas never restart this timer.
+    untrack(tick)
+    const timer = setInterval(tick, 1000)
+    onCleanup(() => clearInterval(timer))
   })
   return rate
 }

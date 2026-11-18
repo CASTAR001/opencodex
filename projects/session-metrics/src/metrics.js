@@ -76,17 +76,38 @@ export function summarize(rows, { model = '', since = -Infinity, until = Infinit
   let missing = 0
   let compactionTokens = 0
   let counted = 0
+  let lastHit, lastCallModel, hitChange, ttft
+  let generated = 0, elapsed = 0
+  const recentRates = []
   const included = row => (!model || model === row.model) && row.created >= since && row.created < until
   for (const row of rows) {
     if (row.type !== 'assistant' && row.type !== 'compaction') continue
     models.add(row.model)
     if (row.type === 'assistant') latestModel = row.model
     if (!included(row)) continue
+    if (row.type === 'assistant' && row.first >= row.created) ttft = row.first - row.created
     if (!row.usage) {
       if (row.ended) missing++
       continue
     }
     counted++
+    if (row.type === 'assistant') {
+      const denominator = row.usage.input + row.usage.read
+      if (denominator > 0) {
+        const next = row.usage.read / denominator
+        hitChange = lastCallModel === row.model && lastHit != null ? next - lastHit : undefined
+        lastHit = next
+        lastCallModel = row.model
+      }
+      const duration = row.streamed - (row.first ?? row.created)
+      const tokens = row.usage.output + row.usage.reasoning
+      if (row.ended && duration >= 500 && tokens > 0) {
+        generated += tokens
+        elapsed += duration
+        if (recentRates.length === 12) recentRates.shift()
+        recentRates.push(tokens * 1000 / duration)
+      }
+    }
     for (const field of Object.keys(totals)) {
       totals[field] += row.usage[field]
       if (row.type === 'compaction') compactionTokens += row.usage[field]
@@ -96,5 +117,6 @@ export function summarize(rows, { model = '', since = -Infinity, until = Infinit
   const turn = recentTurn(rows, running, complete)
   const speed = turn?.bounded && turn.steps.every(included) ? generationRate(turn.steps) : undefined
   return { totals, inputTotal, hit: inputTotal ? totals.read / inputTotal : undefined, missing, counted,
-    compactionTokens, models: [...models].sort(), latestModel, speed, previous: !!turn?.previous }
+    compactionTokens, models: [...models].sort(), latestModel, speed, previous: !!turn?.previous,
+    lastHit, hitChange, ttft, average: elapsed ? generated * 1000 / elapsed : undefined, recentRates }
 }

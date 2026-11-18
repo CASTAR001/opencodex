@@ -1,5 +1,6 @@
 import { createEffect, createMemo, createSignal, createRoot, mapArray, onCleanup } from 'solid-js'
 import { historyPrefix } from './history.js'
+import { lastAssistantWithUsage } from '@opencode/client/solid'
 import { visibleRate } from './stream.js'
 import { measurement, mergeHistory, summarize } from './metrics.js'
 
@@ -12,6 +13,25 @@ function observeSession(session, connected) {
   const [coverage, setCoverage] = createSignal(connected ? 'loading' : 'offline')
   const [ready, setReady] = createSignal(false)
   const [attempt, setAttempt] = createSignal(0)
+  const catalog = server.data.location
+  const ref = session.directory ? { directory: session.directory } : undefined
+  createEffect(() => {
+    attempt()
+    if (!connected || session.pending || catalog.model.list(ref) != null) return
+    let mounted = true
+    onCleanup(() => { mounted = false })
+    const resolve = ref ? Promise.resolve(ref) : catalog.syncInfo().then(() => catalog.default())
+    resolve.then(location => mounted && catalog.model.sync(location)).catch(() => {})
+  })
+  const context = createMemo(() => {
+    const message = lastAssistantWithUsage(data.message.list(id), data.get(id)?.revert?.messageID)
+    if (!message) return
+    const { tokens, model } = message
+    const used = tokens.input + tokens.output + tokens.reasoning + tokens.cache.read + tokens.cache.write
+    const limit = catalog.model.list(ref)?.findLast(entry => entry.providerID === model.providerID &&
+      entry.id === model.id && entry.status !== 'deprecated')?.limit.context
+    return { used, limit, percent: limit > 0 ? Math.round(used / limit * 100) : undefined }
+  })
   const records = mapArray(() => data.message.list(id), row => createMemo(() => measurement(row)))
   const live = createMemo(() => records().map(read => read()))
   const running = () => data.status(id) === 'running'
@@ -48,20 +68,20 @@ function observeSession(session, connected) {
   const rows = createMemo(() => mergeHistory(prefix(), live()))
   const overall = createMemo(() => summarize(rows(), { running: running(), complete: coverage() === 'complete' }))
   const estimate = visibleRate(session, connected && !session.pending)
-  return { rows, coverage, running, overall, estimate, retry: () => setAttempt(n => n + 1) }
+  return { rows, coverage, running, overall, estimate, context, retry: () => setAttempt(n => n + 1) }
 }
 
-// The title and the detail panel can both be visible. Share paging and tokenization until the last view leaves.
+// The title and the detail panel share paging and the live sampler until the last view leaves.
 export function createSessionMetrics() {
   const observed = new Map()
   return function useSession(session) {
-    const { key, id, pending } = session
+    const { key, id, pending, directory } = session
     const { data, client, connected } = session.server
     let entry = observed.get(key)
-    if (!entry || entry.data !== data || entry.client !== client || entry.connected !== connected || entry.pending !== pending) {
-      const target = { id, pending, server: { data, client } }
+    if (!entry || entry.data !== data || entry.client !== client || entry.connected !== connected || entry.pending !== pending || entry.directory !== directory) {
+      const target = { id, pending, directory, server: { data, client } }
       entry = createRoot(dispose => ({
-        data, client, connected, pending, dispose, readers: 0, source: observeSession(target, connected),
+        data, client, connected, pending, directory, dispose, readers: 0, source: observeSession(target, connected),
       }), null)
       observed.set(key, entry)
     }

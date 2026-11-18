@@ -2,7 +2,7 @@
 
 代码块插件 02 的本机验收基线为 `0.1.0-alpha.3`（`ea1b8d8`）。接下来优先开发 **06 Session Metrics Monitor**，目标宿主为 macOS OpenCode Desktop 2.3.2。首版让用户在当前会话的侧栏看到「有多少输入来自缓存」和「最近一回合每秒生成多少 token」。实现、测试和打包在本地独立的 `session-metrics` 仓库完成。通过验收后，总仓库将公开版本同步到 `main` 的 `projects/session-metrics/` 和备份分支 `plugins/session-metrics`。
 
-2026-11-18 的本机试用版 `0.1.0-alpha.2` 按试用反馈将缓存命中率和 TPS 放到每个会话顶栏。打开会话即可查看，点击读数打开首版提供的明细侧栏。OpenAI 部分 GPT 模型支持流式估算。[当前版本与使用方式](README.md)
+当前试用版 `0.1.0-alpha.3` 采用参考 TUI 的跨模型实时 TPS，顶栏同时显示缓存命中率和上下文使用率。下方保留首版设计与验收基线；各版实际计算范围见[当前使用说明](README.md)。
 
 ## 用户会看到什么
 

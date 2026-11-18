@@ -7,7 +7,8 @@ export function header(ctx, input, useSession, open) {
   const label = document.createElement('span')
   const hit = document.createElement('strong')
   const speed = document.createElement('span')
-  button.append(label, hit, speed)
+  const windowUsage = document.createElement('span')
+  button.append(label, hit, speed, windowUsage)
   button.onclick = () => open(input.session)
 
   createEffect(() => {
@@ -20,6 +21,7 @@ export function header(ctx, input, useSession, open) {
     createEffect(() => {
       const { hit: ratio, speed: turn, previous, missing } = source.overall()
       const estimate = source.estimate()
+      const context = source.context()
       const coverage = source.coverage()
       const t = key => ctx.t(key)
       const cache = ratio == null ? '—' : percent.format(ratio)
@@ -29,7 +31,10 @@ export function header(ctx, input, useSession, open) {
       label.textContent = t(input.compact ? 'cacheShort' : 'cacheLabel')
       hit.textContent = cache + (partial && ratio != null ? '*' : '')
       speed.textContent = (estimate ? '≈' : previous && turn ? t('prevShort') + ' ' : '') + value
+      const used = context?.percent == null ? '—' : percent.format(context.percent / 100)
+      windowUsage.textContent = t(input.compact ? 'contextShort' : 'context') + ' ' + used
       const hint = [t('hit') + ' ' + cache, t(estimate ? 'estimated' : previous ? 'previous' : 'recent') + ' ' + value]
+      hint.push(t('context') + ' ' + used + (context ? ' (' + number.format(context.used) + ' / ' + (context.limit > 0 ? number.format(context.limit) : '—') + ')' : ''))
       if (partial) hint.push(t(coverage))
       if (source.running()) hint.push(t('generating'))
       if (turn?.includesWait && !estimate) hint.push(t('wait'))

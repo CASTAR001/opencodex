@@ -55,3 +55,15 @@ test('a retry snapshot is replaced, replay and truncated live suffix do not resu
   const updated = { ...a, usage: b.usage }
   assert.deepEqual(mergeHistory([prompt, a], [updated]), [prompt, updated])
 })
+
+test('TUI detail rows use same-model hit changes, weighted call speeds and reported TTFT', () => {
+  const result = summarize([prompt, a, b])
+  assert.equal(result.lastHit, 0)
+  assert.equal(result.hitChange, undefined)
+  assert.equal(result.average, 50)
+  assert.equal(result.ttft, 100)
+  assert.deepEqual(result.recentRates,[60,30])
+  const same = summarize([a,{...b,model:a.model}])
+  assert.equal(same.hitChange, -70/90)
+  assert.equal(summarize([]).average, undefined)
+})
