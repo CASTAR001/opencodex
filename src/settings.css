@@ -1,0 +1,25 @@
+.ocx-font-control {
+  display: grid;
+  width: 12rem;
+  max-width: 100%;
+  gap: 6px;
+  min-width: 0;
+}
+.ocx-font-control :is(select, input) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--v2-border-border-muted);
+  border-radius: 5px;
+  background: var(--v2-background-bg-base);
+  color: var(--v2-text-text-base);
+  font: inherit;
+}
+.ocx-font-control select { cursor: pointer; appearance: auto; }
+.ocx-font-control :focus-visible { outline: 2px solid var(--v2-border-border-focus); }
+.ocx-font-control small { color: var(--v2-text-text-muted); line-height: 1.4; }
+.ocx-font-control [hidden] { display: none; }
+.ocx-font-preview { margin: 8px 0 0; padding: 8px 12px; color: var(--v2-text-text-base); overflow-wrap: anywhere; white-space: pre-wrap; }
+p.ocx-font-preview { font-family: var(--font-family-sans); }
+pre.ocx-font-preview { font-family: var(--font-family-mono); }
