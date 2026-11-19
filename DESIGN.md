@@ -25,6 +25,7 @@ git clone --single-branch --branch plugins/code-block-enhancer https://github.co
 | provider-quota | 07 · 对话顶栏的统计图标打开独立用量页，按当前连接显示服务商，用量从本机历史统计，账户额度由用户手动刷新。alpha.2 已通过本机验收。 |
 | file-review-enhancer | 08 · 文件审阅缺口。第四批 |
 | bilingual-fonts | 09 · 独立的中西文字体设置页。初始跟随 OpenCode，用户选择保存在本机。 |
+| prompt-navigation | 10 · 按消息 ID 导航到用户提示，追加提示各有刻度。星标按会话保存，历史分页与跳转交给原生时间线。 |
 
 ## 消息渲染分工
 
