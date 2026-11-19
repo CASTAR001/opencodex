@@ -64,7 +64,7 @@ function toolbar(ctx, block) {
         fence.querySelector(':scope > pre > code') && fence.querySelector(':scope > [data-slot="markdown-copy-button"]')) {
       const controls = mountControls(header, fence, labels.get(block.language))
       createEffect(() => controls.labels({ diff: ctx.t('diff'), hideDiff: ctx.t('hideDiff'),
-        diffOnly: ctx.t('diffOnly'), numbers: ctx.t('numbers'), hideNumbers: ctx.t('hideNumbers'),
+        deleted: ctx.t('deleted'), copyPatch: ctx.t('copyPatch'), noCoordinates: ctx.t('noCoordinates'), numbers: ctx.t('numbers'), hideNumbers: ctx.t('hideNumbers'),
         wrap: ctx.t('wrap'), keepLines: ctx.t('keepLines') }))
       onCleanup(controls.dispose)
       return
@@ -78,9 +78,9 @@ function toolbar(ctx, block) {
 
 exports.default = Plugin.define({
   i18n: {
-    en: { diff: 'Show diff', hideDiff: 'Hide diff', diffOnly: 'Available for diff and patch blocks', numbers: 'Show line numbers', hideNumbers: 'Hide line numbers', wrap: 'Wrap lines', keepLines: 'Show original lines' },
-    zh: { diff: '显示 Diff', hideDiff: '隐藏 Diff', diffOnly: '适用于 diff 或 patch 代码块', numbers: '显示行号', hideNumbers: '隐藏行号', wrap: '自动换行', keepLines: '按原行显示' },
-    zht: { diff: '顯示 Diff', hideDiff: '隱藏 Diff', diffOnly: '適用於 diff 或 patch 程式碼區塊', numbers: '顯示行號', hideNumbers: '隱藏行號', wrap: '自動換行', keepLines: '依原行顯示' },
+    en: { diff: 'Review changes', hideDiff: 'Show resulting snippet', deleted: 'This section was deleted', copyPatch: 'Copy original patch', noCoordinates: 'No source line numbers in this patch', numbers: 'Show line numbers', hideNumbers: 'Hide line numbers', wrap: 'Wrap lines', keepLines: 'Show original lines' },
+    zh: { diff: '查看增删', hideDiff: '查看修改后的片段', deleted: '此段已删除', copyPatch: '复制原始补丁', noCoordinates: '补丁未提供源文件行号', numbers: '显示行号', hideNumbers: '隐藏行号', wrap: '自动换行', keepLines: '按原行显示' },
+    zht: { diff: '檢視增刪', hideDiff: '檢視修改後的片段', deleted: '此段已刪除', copyPatch: '複製原始補丁', noCoordinates: '補丁未提供原始檔行號', numbers: '顯示行號', hideNumbers: '隱藏行號', wrap: '自動換行', keepLines: '依原行顯示' },
   },
   setup(ctx) {
     ctx.add(Style, styles)

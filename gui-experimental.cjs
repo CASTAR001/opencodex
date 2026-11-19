@@ -2,7 +2,133 @@
 const { Plugin, CodeBlock, Style } = require('@opencode/plugin/gui')
 const { createComponent, createEffect, onCleanup, onMount } = require('solid-js')
 const { insert } = require('solid-js/web')
-const styles = "/* Only take over layout after the renderer finds the host's original pre and Copy. */\n[data-component=\"markdown\"] [data-component=\"markdown-code\"]:has(> [data-slot=\"markdown-code-content\"] [data-ocx-code-header]) {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) auto auto;\n  align-items: center;\n  min-width: 0;\n  margin-block: 12px 24px;\n  padding-block-start: 4px;\n  border: 0.5px solid var(--v2-border-border-muted);\n  border-radius: 8px;\n  background: var(--v2-background-bg-layer-01);\n\n  --ocx-head-height: 34px;\n  --ocx-sticky-top: var(--sticky-accordion-top, 0px);\n  --ocx-button-size: 24px;\n  --ocx-button-gap: 6px;\n  --ocx-number-gap: 18px;\n  --ocx-number-width: calc(16px + var(--ocx-number-digits, 2) * 1ch + var(--ocx-number-gap));\n  isolation: isolate;\n  overflow: visible;\n\n  /* One shared grid row lets the sticky controls travel to the end of this fence.\n     The native Copy and any other registered actions retain their host locations. */\n  > [data-slot=\"markdown-code-content\"] { display: contents; }\n  &::before, & [data-ocx-code-header], > :is([data-slot=\"markdown-copy-button\"], [data-slot=\"markdown-code-actions\"]) {\n    grid-row: 1;\n    align-self: start;\n    position: sticky;\n    top: var(--ocx-sticky-top);\n    z-index: 2;\n  }\n  &::before {\n    content: \"\";\n    grid-column: 1 / -1;\n    height: calc(var(--ocx-head-height) + 8px);\n    background: var(--v2-background-bg-layer-01);\n    border-radius: 7px 7px 0 0;\n    z-index: 1;\n    pointer-events: none;\n  }\n  & [data-ocx-code-header] { grid-column: 1; }\n  > [data-slot=\"markdown-code-actions\"] { grid-column: 2; gap: var(--ocx-button-gap); }\n  > [data-slot=\"markdown-code-actions\"]:not(:empty) { margin-inline-start: var(--ocx-button-gap); }\n  > [data-slot=\"markdown-copy-button\"] > * { display: flex; align-items: center; }\n  > [data-slot=\"markdown-copy-button\"] button {\n    box-sizing: border-box; width: var(--ocx-button-size); height: var(--ocx-button-size);\n    display: grid; place-items: center; padding: 0;\n  }\n  > [data-slot=\"markdown-copy-button\"] { grid-column: 3; margin-inline: var(--ocx-button-gap) 10px; }\n  > :is([data-slot=\"markdown-copy-button\"], [data-slot=\"markdown-code-actions\"]) {\n    inset-inline-end: auto;\n    display: flex;\n    align-items: center;\n    height: var(--ocx-head-height);\n    opacity: 1;\n    justify-self: end;\n  }\n  > pre, & [data-ocx-code-gutter], & [data-ocx-diff-bands] {\n    grid-area: 1 / 1 / 2 / -1;\n    margin: var(--ocx-head-height) 0 0;\n  }\n  > pre {\n    display: block;\n    min-width: 0;\n    max-height: max(1lh, calc(var(--ocx-code-cap, 55dvh) - var(--ocx-head-height) - 4px));\n    box-sizing: border-box;\n    padding: 8px 16px 16px;\n    border: 0;\n    border-top: 0.5px solid transparent;\n    border-radius: 0 0 8px 8px;\n    white-space: pre;\n    overflow: auto;\n    scrollbar-gutter: auto;\n    scrollbar-width: thin;\n    scrollbar-color: transparent transparent;\n  }\n\n  @supports selector(::-webkit-scrollbar) {\n    > pre { scrollbar-color: auto; scrollbar-width: auto; }\n    > pre::-webkit-scrollbar { width: 0; height: 8px; }\n    > pre::-webkit-scrollbar-corner { background: transparent; }\n    > pre::-webkit-scrollbar-thumb {\n      background: transparent; border: 2px solid transparent; border-radius: 8px; background-clip: padding-box;\n    }\n    &:is(:hover, :focus-within) > pre { scrollbar-color: auto; }\n    &:is(:hover, :focus-within) > pre::-webkit-scrollbar-thumb { background-color: var(--v2-border-border-strong, #988878); }\n  }\n  & [data-ocx-scroll-track] {\n    grid-area: 1 / 1 / 2 / -1; justify-self: end; align-self: stretch; position: relative;\n    margin: calc(var(--ocx-head-height) + 8px) 2px 8px 0;\n    width: 9px; opacity: 0; pointer-events: none; user-select: none; touch-action: none;\n  }\n  &:is(:hover,:focus-within) [data-ocx-scroll-track][data-overflow],\n  & [data-ocx-scroll-track][data-dragging] { opacity: 1; pointer-events: auto; }\n  & [data-ocx-scroll-track] > div { position: absolute; inset: 0 2px auto; border-radius: 6px; background: var(--v2-border-border-strong, #988878); }\n  &:has([data-ocx-toggle=\"wrap\"][aria-pressed=\"true\"]) > pre {\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n    & code, & code span { white-space: inherit; }\n  }\n  &:has([data-ocx-toggle=\"numbers\"][aria-pressed=\"true\"]) > pre { padding-inline-start: var(--ocx-number-width); }\n  & [data-ocx-code-gutter] {\n    align-self: stretch;\n    justify-self: start;\n    position: relative;\n    width: var(--ocx-number-width);\n    background: var(--v2-background-bg-layer-01);\n    color: var(--v2-text-text-muted);\n    font: inherit;\n    font-family: var(--font-family-mono, monospace);\n    font-size: 13px;\n    font-variant-numeric: tabular-nums;\n    border-radius: 0 0 0 7px;\n    overflow: clip;\n    pointer-events: none;\n    user-select: none;\n  }\n  & [data-ocx-code-gutter][hidden] { display:none; }\n  & [data-ocx-code-gutter] i {\n    position: absolute; right: var(--ocx-number-gap); transform: translateY(-50%);\n    font-style: normal; line-height: 1;\n  }\n  & [data-ocx-code-gutter] i::before { content: attr(data-line); }\n\n  & [data-ocx-diff-bands] {\n    position: relative; z-index: -1; align-self: stretch; overflow: clip;\n    border-radius: 0 0 7px 7px; pointer-events: none;\n  }\n  & [data-ocx-diff-bands][hidden] { display: none; }\n  & [data-ocx-diff-bands] i { position: absolute; inset-inline: 0; }\n  & [data-change=\"add\"] { background: var(--surface-diff-add-base, var(--v2-state-bg-success)); }\n  & [data-change=\"delete\"] { background: var(--surface-diff-delete-base, var(--v2-state-bg-danger)); }\n  &:has([data-ocx-toggle=\"diff\"][aria-pressed=\"true\"]) > pre { background: transparent; }\n  &:has([data-ocx-toggle=\"diff\"]:enabled[aria-pressed=\"false\"]) > pre code {\n    color: var(--text-base);\n    & span { color: inherit !important; }\n  }\n\n  /* Desktop flattens Shell spans with an important color. Restore the role\n     emitted by its tokenizer through the variable that rule already reads. */\n  &[data-code-kind=\"shell\"] > pre code {\n    span[style*=\"var(--syntax-keyword)\"] { --markdown-shell-code-token-color: var(--syntax-keyword); }\n    span[style*=\"var(--syntax-primitive)\"] { --markdown-shell-code-token-color: var(--syntax-primitive); }\n    span[style*=\"var(--syntax-string)\"] { --markdown-shell-code-token-color: var(--syntax-string); }\n    span[style*=\"var(--syntax-type)\"] { --markdown-shell-code-token-color: var(--syntax-type); }\n    span[style*=\"var(--syntax-constant)\"] { --markdown-shell-code-token-color: var(--syntax-constant); }\n    span[style*=\"var(--syntax-comment)\"] { --markdown-shell-code-token-color: var(--syntax-comment); }\n    span[style*=\"var(--syntax-variable)\"] { --markdown-shell-code-token-color: var(--syntax-variable); }\n    span[style*=\"var(--syntax-operator)\"] { --markdown-shell-code-token-color: var(--syntax-operator); }\n    span[style*=\"var(--syntax-punctuation)\"] { --markdown-shell-code-token-color: var(--syntax-punctuation); }\n    span[style*=\"var(--syntax-property)\"] { --markdown-shell-code-token-color: var(--syntax-property); }\n    span[style*=\"var(--syntax-regexp)\"] { --markdown-shell-code-token-color: var(--syntax-regexp); }\n    span[style*=\"var(--syntax-info)\"] { --markdown-shell-code-token-color: var(--syntax-info); }\n  }\n}\n\n[data-ocx-code-header] {\n  display: flex;\n  align-items: center;\n  justify-content: flex-end;\n  gap: var(--ocx-button-gap);\n  min-width: 0;\n  min-height: 34px;\n  padding-inline: 16px 0;\n  color: var(--v2-text-text-muted);\n  font-size: 12px;\n  user-select: none;\n\n  > span { margin-inline-end: auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 550; }\n  > button {\n    flex: none;\n    display: grid;\n    place-items: center;\n    box-sizing: border-box;\n    width: var(--ocx-button-size);\n    height: var(--ocx-button-size);\n    padding: 0;\n    border-radius: 4px;\n    color: inherit;\n    cursor: pointer;\n  }\n  > button svg {\n    width: 16px;\n    height: 16px;\n    fill: none;\n    stroke: currentColor;\n    stroke-width: 1.4;\n    stroke-linecap: round;\n    stroke-linejoin: round;\n  }\n  > button:disabled { opacity: .35; cursor: default; }\n  > button:enabled:hover { background: var(--v2-overlay-simple-overlay-hover); }\n  > button:focus-visible { outline: 2px solid var(--v2-border-border-focus); outline-offset: 1px; }\n}\n\n[data-ocx-code-header] :is([data-ocx-toggle=\"diff\"],[data-ocx-toggle=\"numbers\"])[aria-pressed=\"true\"] { color: var(--v2-text-text-strong); background: var(--v2-overlay-simple-overlay-hover); }\n"
+const styles = "/* Only take over layout after the renderer finds the host's original pre and Copy. */\n[data-component=\"markdown\"] [data-component=\"markdown-code\"]:has(> [data-slot=\"markdown-code-content\"] [data-ocx-code-header]) {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) auto auto;\n  align-items: center;\n  min-width: 0;\n  margin-block: 12px 24px;\n  padding-block-start: 4px;\n  border: 0.5px solid var(--v2-border-border-muted);\n  border-radius: 8px;\n  background: var(--v2-background-bg-layer-01);\n\n  --ocx-head-height: 34px;\n  --ocx-sticky-top: var(--sticky-accordion-top, 0px);\n  --ocx-button-size: 24px;\n  --ocx-button-gap: 6px;\n  --ocx-number-gap: 18px;\n  --ocx-number-width: calc(16px + var(--ocx-number-digits, 2) * 1ch + var(--ocx-number-gap));\n  isolation: isolate;\n  overflow: visible;\n\n  /* One shared grid row lets the sticky controls travel to the end of this fence.\n     The native Copy and any other registered actions retain their host locations. */\n  > [data-slot=\"markdown-code-content\"] { display: contents; }\n  &::before, & [data-ocx-code-header], > :is([data-slot=\"markdown-copy-button\"], [data-slot=\"markdown-code-actions\"]) {\n    grid-row: 1;\n    align-self: start;\n    position: sticky;\n    top: var(--ocx-sticky-top);\n    z-index: 2;\n  }\n  &::before {\n    content: \"\";\n    grid-column: 1 / -1;\n    height: calc(var(--ocx-head-height) + 8px);\n    background: var(--v2-background-bg-layer-01);\n    border-radius: 7px 7px 0 0;\n    z-index: 1;\n    pointer-events: none;\n  }\n  & [data-ocx-code-header] { grid-column: 1; }\n  > [data-slot=\"markdown-code-actions\"] { grid-column: 2; gap: var(--ocx-button-gap); }\n  > [data-slot=\"markdown-code-actions\"]:not(:empty) { margin-inline-start: var(--ocx-button-gap); }\n  > [data-slot=\"markdown-copy-button\"] > * { display: flex; align-items: center; }\n  > [data-slot=\"markdown-copy-button\"] button {\n    box-sizing: border-box; width: var(--ocx-button-size); height: var(--ocx-button-size);\n    display: grid; place-items: center; padding: 0;\n  }\n  > [data-slot=\"markdown-copy-button\"] { grid-column: 3; margin-inline: var(--ocx-button-gap) 10px; }\n  > :is([data-slot=\"markdown-copy-button\"], [data-slot=\"markdown-code-actions\"]) {\n    inset-inline-end: auto;\n    display: flex;\n    align-items: center;\n    height: var(--ocx-head-height);\n    opacity: 1;\n    justify-self: end;\n  }\n  pre:where([data-component=\"markdown-code\"] > pre, [data-ocx-patch-view]), & [data-ocx-code-gutter] {\n    grid-area: 1 / 1 / 2 / -1;\n    margin: var(--ocx-head-height) 0 0;\n  }\n  pre:where([data-component=\"markdown-code\"] > pre, [data-ocx-patch-view]) {\n    display: block;\n    min-width: 0;\n    max-height: max(1lh, calc(var(--ocx-code-cap, 55dvh) - var(--ocx-head-height) - 4px));\n    box-sizing: border-box;\n    padding: 8px 16px 16px;\n    border: 0;\n    border-top: 0.5px solid transparent;\n    border-radius: 0 0 8px 8px;\n    white-space: pre;\n    overflow: auto;\n    scrollbar-gutter: auto;\n    scrollbar-width: thin;\n    scrollbar-color: transparent transparent;\n  }\n\n  @supports selector(::-webkit-scrollbar) {\n    pre:where([data-component=\"markdown-code\"] > pre, [data-ocx-patch-view]) { scrollbar-color: auto; scrollbar-width: auto; }\n    pre:where([data-component=\"markdown-code\"] > pre, [data-ocx-patch-view])::-webkit-scrollbar { width: 0; height: 8px; }\n    pre:where([data-component=\"markdown-code\"] > pre, [data-ocx-patch-view])::-webkit-scrollbar-corner { background: transparent; }\n    pre:where([data-component=\"markdown-code\"] > pre, [data-ocx-patch-view])::-webkit-scrollbar-thumb {\n      background: transparent; border: 2px solid transparent; border-radius: 8px; background-clip: padding-box;\n    }\n    &:is(:hover, :focus-within) pre:where([data-component=\"markdown-code\"] > pre, [data-ocx-patch-view]) { scrollbar-color: auto; }\n    &:is(:hover, :focus-within) pre:where([data-component=\"markdown-code\"] > pre, [data-ocx-patch-view])::-webkit-scrollbar-thumb { background-color: var(--v2-border-border-strong, #988878); }\n  }\n  & [data-ocx-scroll-track] {\n    grid-area: 1 / 1 / 2 / -1; justify-self: end; align-self: stretch; position: relative;\n    margin: calc(var(--ocx-head-height) + 8px) 2px 8px 0;\n    width: 9px; opacity: 0; pointer-events: none; user-select: none; touch-action: none;\n  }\n  &:is(:hover,:focus-within) [data-ocx-scroll-track][data-overflow],\n  & [data-ocx-scroll-track][data-dragging] { opacity: 1; pointer-events: auto; }\n  & [data-ocx-scroll-track] > div { position: absolute; inset: 0 2px auto; border-radius: 6px; background: var(--v2-border-border-strong, #988878); }\n  &:has([data-ocx-toggle=\"wrap\"][aria-pressed=\"true\"]) pre:where([data-component=\"markdown-code\"] > pre, [data-ocx-patch-view]) {\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n    & code, & code span { white-space: inherit; }\n  }\n  &:has([data-ocx-toggle=\"numbers\"][aria-pressed=\"true\"]) > pre { padding-inline-start: var(--ocx-number-width); }\n  & [data-ocx-code-gutter] {\n    align-self: stretch;\n    justify-self: start;\n    position: relative;\n    width: var(--ocx-number-width);\n    background: var(--v2-background-bg-layer-01);\n    color: var(--v2-text-text-muted);\n    font: inherit;\n    font-family: var(--font-family-mono, monospace);\n    font-size: 13px;\n    font-variant-numeric: tabular-nums;\n    border-radius: 0 0 0 7px;\n    overflow: clip;\n    pointer-events: none;\n    user-select: none;\n  }\n  & [data-ocx-code-gutter][hidden] { display:none; }\n  & [data-ocx-code-gutter] i {\n    position: absolute; right: var(--ocx-number-gap); transform: translateY(-50%);\n    font-style: normal; line-height: 1;\n  }\n  & [data-ocx-code-gutter] i::before { content: attr(data-line); }\n\n  &:has([data-ocx-patch-view]) > pre { display: none; }\n  &:has([data-ocx-patch-view]) > [data-slot=\"markdown-copy-button\"] { visibility: hidden; }\n  & [data-ocx-copy-patch] {\n    grid-area: 1 / 3; align-self: start; justify-self: end; position: sticky;\n    top: calc(var(--ocx-sticky-top) + (var(--ocx-head-height) - var(--ocx-button-size)) / 2);\n    margin: calc((var(--ocx-head-height) - var(--ocx-button-size)) / 2) 10px 0 var(--ocx-button-gap);\n    z-index: 2; color: var(--v2-text-text-muted);\n  }\n  & [data-ocx-copy-check] { display: none; }\n  &:has([data-slot=\"markdown-copy-button\"][data-copied=\"true\"]) [data-ocx-copy-patch] {\n    & path:first-child { display: none; }\n    & [data-ocx-copy-check] { display: block; }\n  }\n  & [data-ocx-patch-view] {\n    font-family: var(--font-family-mono, monospace); font-size: 13px; line-height: 20px;\n    color: var(--text-base); text-align: start;\n  }\n  & [data-ocx-patch-lines] { display: block; min-width: 100%; width: max-content; }\n  &:has([data-ocx-toggle=\"wrap\"][aria-pressed=\"true\"]) [data-ocx-patch-lines] { width: auto; }\n  & [data-ocx-hunk] { display: block; }\n  & [data-ocx-hunk] + [data-ocx-hunk] {\n    margin-block-start: .5lh; border-block-start: 1px dashed var(--v2-border-border-muted); padding-block-start: .5lh;\n  }\n  & [data-ocx-deleted]::before {\n    content: attr(data-ocx-deleted); color: var(--v2-text-text-muted); font-style: italic; user-select: none;\n  }\n  & [data-ocx-patch-row] {\n    display: grid; grid-template-columns: 1fr; align-items: baseline; min-height: 1lh;\n  }\n  & [data-ocx-patch-text] { min-width: 0; }\n  & [data-review] [data-ocx-patch-row] { grid-template-columns: 2ch 1fr; }\n  & [data-review] [data-ocx-patch-row]::after {\n    grid-area: 1 / 1; content: \" \"; text-align: center; user-select: none;\n  }\n  & [data-review] [data-ocx-patch-text] { grid-area: 1 / 2; }\n  & [data-review] [data-change=\"add\"] { background: var(--surface-diff-add-base, var(--v2-state-bg-success)); }\n  & [data-review] [data-change=\"delete\"] { background: var(--surface-diff-delete-base, var(--v2-state-bg-danger)); }\n  & [data-review] [data-change=\"add\"]::after { content: \"+\"; }\n  & [data-review] [data-change=\"delete\"]::after { content: \"−\"; }\n  &:has([data-ocx-toggle=\"numbers\"][aria-pressed=\"true\"]) {\n    & [data-ocx-patch-row] {\n      grid-template-columns: calc(var(--ocx-patch-digits)*1ch) var(--ocx-number-gap) 1fr;\n    }\n    & [data-ocx-patch-row]::before {\n      grid-area: 1 / 1; content: attr(data-coordinates); text-align: end; color: var(--v2-text-text-muted);\n      white-space: pre; font-variant-numeric: tabular-nums; user-select: none;\n    }\n    & [data-ocx-patch-text] { grid-area: 1 / 3; }\n    & [data-review] [data-ocx-patch-row] {\n      grid-template-columns: calc((2 * var(--ocx-patch-digits) + 1) * 1ch) var(--ocx-number-gap) 2ch 1fr;\n    }\n    & [data-review] [data-ocx-patch-row]::after { grid-area: 1 / 3; }\n    & [data-review] [data-ocx-patch-text] { grid-area: 1 / 4; }\n  }\n\n  /* Desktop flattens Shell spans with an important color. Restore the role\n     emitted by its tokenizer through the variable that rule already reads. */\n  &[data-code-kind=\"shell\"] > pre code {\n    span[style*=\"var(--syntax-keyword)\"] { --markdown-shell-code-token-color: var(--syntax-keyword); }\n    span[style*=\"var(--syntax-primitive)\"] { --markdown-shell-code-token-color: var(--syntax-primitive); }\n    span[style*=\"var(--syntax-string)\"] { --markdown-shell-code-token-color: var(--syntax-string); }\n    span[style*=\"var(--syntax-type)\"] { --markdown-shell-code-token-color: var(--syntax-type); }\n    span[style*=\"var(--syntax-constant)\"] { --markdown-shell-code-token-color: var(--syntax-constant); }\n    span[style*=\"var(--syntax-comment)\"] { --markdown-shell-code-token-color: var(--syntax-comment); }\n    span[style*=\"var(--syntax-variable)\"] { --markdown-shell-code-token-color: var(--syntax-variable); }\n    span[style*=\"var(--syntax-operator)\"] { --markdown-shell-code-token-color: var(--syntax-operator); }\n    span[style*=\"var(--syntax-punctuation)\"] { --markdown-shell-code-token-color: var(--syntax-punctuation); }\n    span[style*=\"var(--syntax-property)\"] { --markdown-shell-code-token-color: var(--syntax-property); }\n    span[style*=\"var(--syntax-regexp)\"] { --markdown-shell-code-token-color: var(--syntax-regexp); }\n    span[style*=\"var(--syntax-info)\"] { --markdown-shell-code-token-color: var(--syntax-info); }\n  }\n}\n\n[data-ocx-code-header] {\n  display: flex;\n  align-items: center;\n  justify-content: flex-end;\n  gap: var(--ocx-button-gap);\n  min-width: 0;\n  min-height: 34px;\n  padding-inline: 16px 0;\n  color: var(--v2-text-text-muted);\n  font-size: 12px;\n  user-select: none;\n\n  > span { margin-inline-end: auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 550; }\n}\n:is([data-ocx-code-header] > button, [data-ocx-copy-patch]) {\n  flex: none;\n  display: grid;\n  place-items: center;\n  box-sizing: border-box;\n  width: var(--ocx-button-size);\n  height: var(--ocx-button-size);\n  padding: 0;\n  border-radius: 4px;\n  color: inherit;\n  cursor: pointer;\n  & svg {\n    width: 16px;\n    height: 16px;\n    fill: none;\n    stroke: currentColor;\n    stroke-width: 1.4;\n    stroke-linecap: round;\n    stroke-linejoin: round;\n  }\n  &:disabled { opacity: .35; cursor: default; }\n  &:enabled:hover { background: var(--v2-overlay-simple-overlay-hover); }\n  &:focus-visible { outline: 2px solid var(--v2-border-border-focus); outline-offset: 1px; }\n}\n\n[data-ocx-code-header] :is([data-ocx-toggle=\"diff\"],[data-ocx-toggle=\"numbers\"])[aria-pressed=\"true\"] { color: var(--v2-text-text-strong); background: var(--v2-overlay-simple-overlay-hover); }\n"
+// Interpret a completed fence as a unit. Any unaccounted line keeps the native source view.
+const hunkHeader = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(?: .*)?$/
+const rowKinds = { ' ': 'context', '+': 'add', '-': 'delete' }
+const noNewline = '\\ No newline at end of file'
+const gitMetadata = /^(?:index [\da-fA-F]+\.\.[\da-fA-F]+(?: [0-7]+)?|(?:old mode|new mode|new file mode|deleted file mode) [0-7]+|(?:dis)?similarity index \d+%|(?:rename|copy) (?:from|to) .+)$/
+function patchRow(line, oldLine, newLine) {
+  const kind = rowKinds[line[0]]
+  if (kind) return { kind, text: line.slice(1), oldLine: kind === 'add' ? undefined : oldLine,
+    newLine: kind === 'delete' ? undefined : newLine }
+}
+function parsePatch(source) {
+  const lines = source.split(/\r\n|\n/)
+  if (lines.at(-1) === '') lines.pop()
+  if (!lines.length) return
+  if (!/^(?:@@|diff |---(?:\s|$)|\+\+\+(?:\s|$))/.test(lines[0])) {
+    if (lines.some(line => /^(?:---|\+\+\+)(?:\s|$)/.test(line))) return
+    const rows = lines.map(line => patchRow(line))
+    if (rows.every(Boolean) && rows.some(row => row.kind !== 'context')) return { hunks: [rows], numbered: false }
+    return
+  }
+  const hunks = []
+  let index = 0, changed = false
+  while (index < lines.length) {
+    if (lines[index].startsWith('diff --git ')) {
+      index++
+      while (gitMetadata.test(lines[index])) index++
+    }
+    if (/^---\s+\S/.test(lines[index])) {
+      if (!/^\+\+\+\s+\S/.test(lines[++index])) return
+      index++
+    }
+    const header = hunkHeader.exec(lines[index++])
+    if (!header) return
+    let oldLine = Number(header[1]), newLine = Number(header[3])
+    let oldCount = Number(header[2] ?? 1), newCount = Number(header[4] ?? 1)
+    if (![oldLine + oldCount, newLine + newCount].every(Number.isSafeInteger) ||
+        (!oldLine && oldCount) || (!newLine && newCount) || !(oldCount || newCount)) return
+    const rows = []
+    while (oldCount || newCount) {
+      if (index === lines.length) return
+      const row = patchRow(lines[index++], oldLine, newLine)
+      if (!row) return
+      if (row.kind !== 'add') {
+        if (!oldCount) return
+        oldCount--
+        oldLine++
+      }
+      if (row.kind !== 'delete') {
+        if (!newCount) return
+        newCount--
+        newLine++
+      }
+      if (row.kind !== 'context') changed = true
+      rows.push(row)
+      if (lines[index] === noNewline) index++
+    }
+    hunks.push(rows)
+  }
+  if (changed) return { hunks, numbered: true }
+}
+
+// Each mode is built only when first opened. Selectable text contains source lines,
+// with real newlines. CSS paints review markers and coordinates outside the selection.
+function createPatchView(model) {
+  const pre = document.createElement('pre')
+  pre.dataset.ocxPatchView = ''
+  const views = new Map()
+  let digits = 1
+  if (model.numbered) {
+    for (const rows of model.hunks) {
+      const lastOld = rows.findLast(row => row.oldLine !== undefined)?.oldLine ?? 0
+      const lastNew = rows.findLast(row => row.newLine !== undefined)?.newLine ?? 0
+      digits = Math.max(digits, String(Math.max(lastOld, lastNew)).length)
+    }
+  }
+  let current, deletedLabel
+  function show(review) {
+    if (current === review) return
+    current = review
+    let view = views.get(review)
+    if (!view) {
+      view = document.createElement('span')
+      view.dataset.ocxPatchLines = ''
+      for (const rows of model.hunks) {
+        const group = document.createElement('span')
+        group.dataset.ocxHunk = ''
+        const visible = review ? rows : rows.filter(row => row.kind !== 'delete')
+        if (!visible.length) {
+          group.dataset.ocxDeleted = deletedLabel || ''
+          group.setAttribute('aria-label', deletedLabel || '')
+        }
+        for (const [i, row] of visible.entries()) {
+          const line = document.createElement('span')
+          line.dataset.ocxPatchRow = ''
+          line.dataset.change = row.kind
+          if (model.numbered) {
+            const old = String(row.oldLine ?? '').padStart(digits)
+            const next = String(row.newLine ?? '').padStart(digits)
+            line.dataset.coordinates = review ? old + ' ' + next : next
+          }
+          const content = document.createElement('span')
+          content.dataset.ocxPatchText = ''
+          content.textContent = row.text + (i < visible.length - 1 ? '\n' : '')
+          line.append(content)
+          group.append(line)
+        }
+        view.append(group)
+      }
+      view.style.setProperty('--ocx-patch-digits', String(digits))
+      views.set(review, view)
+    }
+    pre.toggleAttribute('data-review', review)
+    pre.replaceChildren(view)
+  }
+  return { pre, show, label(text) {
+    if (deletedLabel === text) return
+    deletedLabel = text
+    for (const el of views.get(false)?.querySelectorAll('[data-ocx-deleted]') || []) {
+      el.dataset.ocxDeleted = text
+      el.setAttribute('aria-label', text)
+    }
+  } }
+}
+
+
+
 // A split pane can resize without the window resizing. All fences in it share one observation.
 const panes = new WeakMap()
 function watchPane(fence) {
@@ -32,40 +158,14 @@ function watchPane(fence) {
   }
 }
 
-// File headers also begin with --- and +++. Inside a unified hunk those same
-// prefixes can be real source lines. The hunk lengths distinguish the two.
-function diffKinds(source) {
-  let oldLeft = 0, newLeft = 0
-  return source.split('\n').map(line => {
-    const hunk = /^@@ -\d+(?:,(\d+))? \+\d+(?:,(\d+))? @@/.exec(line)
-    if (hunk) {
-      oldLeft = Number(hunk[1] ?? 1)
-      newLeft = Number(hunk[2] ?? 1)
-      return
-    }
-    if (oldLeft || newLeft) {
-      if (line.startsWith('\\')) return
-      if (line.startsWith(' ') && oldLeft && newLeft) { oldLeft--; newLeft--; return }
-      if (line.startsWith('-') && oldLeft) { oldLeft--; return 'delete' }
-      if (line.startsWith('+') && newLeft) { newLeft--; return 'add' }
-      oldLeft = newLeft = 0
-    }
-    if (/^(?:---|\+\+\+)(?:\s|$)/.test(line)) return
-    if (line.startsWith('+')) return 'add'
-    if (line.startsWith('-')) return 'delete'
-  })
-}
-
-// Anchor both overlays to the original highlighted text. Only visible rows
-// get decoration nodes, and native selections and Copy still see pure source.
-function decorateLines(pre, gutter, bands, state) {
-  const fence = pre.parentElement
+// Measure the first character of each logical line in the host's actual highlighted text.
+// Line numbers never enter the source DOM, the selection or the native Copy payload.
+function numberLines(pre, gutter) {
+  const fence = gutter.closest('[data-component="markdown-code"]')
   const range = document.createRange()
-  let starts = [], last, kinds, dirty = true, frame = 0
+  let starts = [], dirty = true, frame = 0
   function index() {
     starts = []
-    last = undefined
-    kinds = undefined
     const walker = document.createTreeWalker(pre, NodeFilter.SHOW_TEXT)
     let atStart = true, node
     while ((node = walker.nextNode())) {
@@ -75,12 +175,12 @@ function decorateLines(pre, gutter, bands, state) {
       for (let i = text.indexOf('\n'); i >= 0; i = text.indexOf('\n', i + 1))
         if (i + 1 < text.length) starts.push([node, i + 1])
       atStart = text.endsWith('\n')
-      last = [node, text.length - 1]
     }
     fence.style.setProperty('--ocx-number-digits', String(Math.max(2, String(starts.length).length)))
     dirty = false
   }
-  function rect([node, offset]) {
+  function rect(i) {
+    const [node, offset] = starts[i]
     range.setStart(node, offset)
     range.setEnd(node, offset + 1)
     return range.getBoundingClientRect()
@@ -88,31 +188,20 @@ function decorateLines(pre, gutter, bands, state) {
   function paint() {
     frame = 0
     if (dirty) index()
-    if (state.diff && !kinds) kinds = diffKinds(pre.textContent)
-    const box = pre.getBoundingClientRect()
+    const box = gutter.getBoundingClientRect()
     if (!box.height) return
-    const lineHeight = parseFloat(getComputedStyle(pre).lineHeight) || 20
     let lo = 0, hi = starts.length
     while (lo < hi) {
       const mid = Math.floor((lo + hi) / 2)
-      if (rect(starts[mid]).bottom <= box.top) lo = mid + 1
+      if (rect(mid).bottom <= box.top) lo = mid + 1
       else hi = mid
     }
-    // A wrapped line may begin above the viewport and still fill it.
-    const visible = [], fills = []
-    for (let i = Math.max(0,lo - 1); i < starts.length; i++) {
-      const line = rect(starts[i])
-      const center = line.top + line.height / 2 - box.top
-      if (center - lineHeight / 2 >= box.height) break
-      if (state.numbers && line.bottom > box.top) visible.push([i + 1, center])
-      if (state.diff && kinds[i]) {
-        const next = starts[i + 1]
-        const end = rect(next || last)
-        const bottom = end.top + end.height / 2 - box.top + (next ? -lineHeight : lineHeight) / 2
-        const y = Math.max(0, center - lineHeight / 2)
-        const height = Math.min(box.height, bottom) - y
-        if (height > 0) fills.push([kinds[i], y, height])
-      }
+    // Complete layout reads before reusing the small pool of visible labels.
+    const visible = []
+    for (let i = lo; i < starts.length; i++) {
+      const line = rect(i)
+      if (line.top >= box.bottom) break
+      visible.push([i + 1, line.top + line.height / 2 - box.top])
     }
     visible.forEach(([n, y], i) => {
       const label = gutter.children[i] || gutter.appendChild(document.createElement('i'))
@@ -120,13 +209,6 @@ function decorateLines(pre, gutter, bands, state) {
       label.style.top = y + 'px'
     })
     while (gutter.childElementCount > visible.length) gutter.lastChild.remove()
-    fills.forEach(([kind,y,height], i) => {
-      const fill = bands.children[i] || bands.appendChild(document.createElement('i'))
-      fill.dataset.change = kind
-      fill.style.top = y + 'px'
-      fill.style.height = height + 'px'
-    })
-    while (bands.childElementCount > fills.length) bands.lastChild.remove()
   }
   function schedule() { if (!frame) frame = requestAnimationFrame(paint) }
   const edits = new MutationObserver(() => { dirty = true; schedule() })
@@ -144,7 +226,6 @@ function decorateLines(pre, gutter, bands, state) {
     document.fonts?.removeEventListener('loadingdone', schedule)
     cancelAnimationFrame(frame)
     gutter.replaceChildren()
-    bands.replaceChildren()
     fence.style.removeProperty('--ocx-number-digits')
   } }
 }
@@ -230,47 +311,65 @@ function iconButton(name) {
 }
 
 function mountControls(header, fence, language) {
-  const pre = fence.querySelector(':scope > pre')
+  const nativePre = fence.querySelector(':scope > pre')
+  const model = language === 'Diff' ? parsePatch(nativePre.textContent) : undefined
+  const patch = model && createPatchView(model)
+  const pre = patch ? patch.pre : nativePre
   const title = document.createElement('span')
   title.textContent = language
-  const diff = iconButton('diff')
-  diff.path.setAttribute('d','M2.5 4.5h6 M5.5 1.5v6 M7.5 11.5h6')
-  diff.button.disabled = language !== 'Diff'
   const number = iconButton('numbers')
   number.path.setAttribute('d','M2 2.5h1v3 M1.8 5.5h2.4 M1.7 9c.4-1.4 2.8-1.2 2.8.4 0 .9-1.7 1.8-2.6 3.1h2.8 M7 4h7 M7 8h7 M7 12h7')
+  number.button.disabled = !!model && !model.numbered
   const wrap = iconButton('wrap')
-  header.replaceChildren(title, diff.button, number.button, wrap.button)
+  header.replaceChildren(title, number.button, wrap.button)
   header.dataset.ocxCodeHeader = ''
-  const gutter = document.createElement('div')
-  gutter.dataset.ocxCodeGutter = ''
-  gutter.setAttribute('aria-hidden','true')
-  gutter.hidden = true
-  header.after(gutter)
-  const bands = document.createElement('div')
-  bands.dataset.ocxDiffBands = ''
-  bands.setAttribute('aria-hidden','true')
-  bands.hidden = true
-  gutter.before(bands)
   const track = document.createElement('div')
   track.dataset.ocxScrollTrack = ''
   track.setAttribute('aria-hidden','true')
-  gutter.after(track)
+  header.after(track)
+  let review = false, numbered = false, wrapped = true
+  let diff, copy, gutter, numbering, labels
+  if (patch) {
+    diff = iconButton('diff')
+    diff.path.setAttribute('d','M3 5.5h10 M8 1v9 M3 13.5h10')
+    number.button.before(diff.button)
+    // Delegate to the native copy action with the untouched original code still in place.
+    copy = iconButton('copy')
+    copy.button.removeAttribute('data-ocx-toggle')
+    copy.button.dataset.ocxCopyPatch = ''
+    copy.path.setAttribute('d','M6 5.5V3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-2.5 M3 5.5h6.5a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z')
+    const check = document.createElementNS(copy.path.namespaceURI, 'path')
+    check.dataset.ocxCopyCheck = ''
+    check.setAttribute('d','M2.5 8.5 6.5 12 14 4')
+    copy.path.after(check)
+    copy.button.onclick = () => fence.querySelector(':scope > [data-slot="markdown-copy-button"] button')?.click()
+    header.after(copy.button, pre)
+    patch.show(false)
+    diff.button.onclick = () => { review = !review; patch.show(review); render(); scroll.changed() }
+  } else {
+    gutter = document.createElement('div')
+    gutter.dataset.ocxCodeGutter = ''
+    gutter.setAttribute('aria-hidden','true')
+    gutter.hidden = true
+    header.after(gutter)
+  }
   const scroll = scrollThumb(fence,pre,track)
-  // A streaming fence may be decorated in a fragment before its row is attached.
-  let release
+  let release, mountFrame = 0
   const bind = () => { release = watchPane(fence) }
-  let mountFrame = 0
   if (fence.isConnected) bind()
   else mountFrame = requestAnimationFrame(bind)
-  const state = { numbers: false, diff: false }
-  let decorations, wrapped = true, labels
   function render() {
-    diff.button.setAttribute('aria-label',labels.diff)
-    diff.button.setAttribute('aria-pressed',String(state.diff))
-    diff.button.title = diff.button.disabled ? labels.diffOnly : state.diff ? labels.hideDiff : labels.diff
-    number.button.setAttribute('aria-pressed',String(state.numbers))
+    if (patch) {
+      patch.label(labels.deleted)
+      diff.button.setAttribute('aria-label', labels.diff)
+      diff.button.setAttribute('aria-pressed', String(review))
+      diff.button.title = review ? labels.hideDiff : labels.diff
+      copy.button.setAttribute('aria-label', labels.copyPatch)
+      copy.button.title = labels.copyPatch
+    }
+    number.button.setAttribute('aria-pressed',String(numbered))
     number.button.setAttribute('aria-label',labels.numbers)
-    number.button.title = state.numbers ? labels.hideNumbers : labels.numbers
+    number.button.title = number.button.disabled ? labels.noCoordinates : numbered ? labels.hideNumbers : labels.numbers
     wrap.button.setAttribute('aria-pressed',String(wrapped))
     wrap.button.setAttribute('aria-label',labels.wrap)
     wrap.button.title = wrapped ? labels.keepLines : labels.wrap
@@ -278,26 +377,23 @@ function mountControls(header, fence, language) {
       ? 'M2 3.5h12 M2 7.5h9.5a2.5 2.5 0 0 1 0 5h-4 M9.5 10.5l-2 2 2 2 M2 12.5h2.5'
       : 'M2 3.5h8 M2 8h12 M11.5 5.5 14 8l-2.5 2.5 M2 12.5h8')
   }
-  function toggleDecoration(key) {
-    state[key] = !state[key]
-    render()
-    gutter.hidden = !state.numbers
-    bands.hidden = !state.diff
-    if (state.diff || state.numbers) {
-      decorations ??= decorateLines(pre, gutter, bands, state)
-      decorations.schedule()
-    } else {
-      decorations.stop()
-      decorations = undefined
+  number.button.onclick = () => {
+    numbered = !numbered
+    if (gutter) {
+      gutter.hidden = !numbered
+      if (numbered) numbering = numberLines(pre, gutter)
+      else { numbering.stop(); numbering = undefined }
     }
+    render()
     scroll.changed()
   }
-  diff.button.onclick = () => toggleDecoration('diff')
-  number.button.onclick = () => toggleDecoration('numbers')
-  wrap.button.onclick = () => { wrapped = !wrapped; render(); decorations?.schedule(); scroll.changed() }
+  wrap.button.onclick = () => { wrapped = !wrapped; render(); numbering?.schedule(); scroll.changed() }
   return {
     labels(value) { labels = value; render() },
-    dispose() { decorations?.stop(); bands.remove(); scroll.dispose(); cancelAnimationFrame(mountFrame); release?.(); gutter.remove() }
+    dispose() {
+      numbering?.stop(); patch?.pre.remove(); copy?.button.remove(); gutter?.remove()
+      scroll.dispose(); cancelAnimationFrame(mountFrame); release?.()
+    }
   }
 }
 
@@ -363,7 +459,7 @@ function toolbar(ctx, block) {
         fence.querySelector(':scope > pre > code') && fence.querySelector(':scope > [data-slot="markdown-copy-button"]')) {
       const controls = mountControls(header, fence, labels.get(block.language))
       createEffect(() => controls.labels({ diff: ctx.t('diff'), hideDiff: ctx.t('hideDiff'),
-        diffOnly: ctx.t('diffOnly'), numbers: ctx.t('numbers'), hideNumbers: ctx.t('hideNumbers'),
+        deleted: ctx.t('deleted'), copyPatch: ctx.t('copyPatch'), noCoordinates: ctx.t('noCoordinates'), numbers: ctx.t('numbers'), hideNumbers: ctx.t('hideNumbers'),
         wrap: ctx.t('wrap'), keepLines: ctx.t('keepLines') }))
       onCleanup(controls.dispose)
       return
@@ -377,9 +473,9 @@ function toolbar(ctx, block) {
 
 exports.default = Plugin.define({
   i18n: {
-    en: { diff: 'Show diff', hideDiff: 'Hide diff', diffOnly: 'Available for diff and patch blocks', numbers: 'Show line numbers', hideNumbers: 'Hide line numbers', wrap: 'Wrap lines', keepLines: 'Show original lines' },
-    zh: { diff: '显示 Diff', hideDiff: '隐藏 Diff', diffOnly: '适用于 diff 或 patch 代码块', numbers: '显示行号', hideNumbers: '隐藏行号', wrap: '自动换行', keepLines: '按原行显示' },
-    zht: { diff: '顯示 Diff', hideDiff: '隱藏 Diff', diffOnly: '適用於 diff 或 patch 程式碼區塊', numbers: '顯示行號', hideNumbers: '隱藏行號', wrap: '自動換行', keepLines: '依原行顯示' },
+    en: { diff: 'Review changes', hideDiff: 'Show resulting snippet', deleted: 'This section was deleted', copyPatch: 'Copy original patch', noCoordinates: 'No source line numbers in this patch', numbers: 'Show line numbers', hideNumbers: 'Hide line numbers', wrap: 'Wrap lines', keepLines: 'Show original lines' },
+    zh: { diff: '查看增删', hideDiff: '查看修改后的片段', deleted: '此段已删除', copyPatch: '复制原始补丁', noCoordinates: '补丁未提供源文件行号', numbers: '显示行号', hideNumbers: '隐藏行号', wrap: '自动换行', keepLines: '按原行显示' },
+    zht: { diff: '檢視增刪', hideDiff: '檢視修改後的片段', deleted: '此段已刪除', copyPatch: '複製原始補丁', noCoordinates: '補丁未提供原始檔行號', numbers: '顯示行號', hideNumbers: '隱藏行號', wrap: '自動換行', keepLines: '依原行顯示' },
   },
   setup(ctx) {
     ctx.add(Style, styles)
