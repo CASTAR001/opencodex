@@ -1,3 +1,5 @@
+import { edgeScroll } from './edge-scroll.js'
+
 function el(tag, cls) {
   const node = document.createElement(tag)
   node.className = cls
@@ -54,6 +56,7 @@ export function createRail({ href, jump, star, retry }) {
     shown = undefined
     pop.hidden = true
   }
+  const edges = edgeScroll(list,nav,close)
   function show(id) {
     clearTimeout(idle)
     const entry = entries.get(id)
@@ -70,6 +73,7 @@ export function createRail({ href, jump, star, retry }) {
     position()
   }
   function leave() {
+    if (!shown) return
     clearTimeout(idle)
     idle = setTimeout(()=>{
       if (!pop.matches(':hover, :focus-within') && !entries.get(shown)?.link.matches(':hover, :focus-visible')) close()
@@ -117,7 +121,7 @@ export function createRail({ href, jump, star, retry }) {
     link.setAttribute('preload','false')
     link.tabIndex = -1
     link.onfocus = () => {setRoving(id); show(id)}
-    link.onpointerenter = event => {if (event.pointerType !== 'touch') show(id)}
+    link.onpointerenter = event => {if (event.pointerType !== 'touch' && !edges.moving) show(id)}
     link.onpointerleave = leave
     link.onclick = event => {
       if (event.button !== 0 || event.altKey || event.metaKey || event.ctrlKey || event.shiftKey) { event.preventDefault(); return }
@@ -136,15 +140,24 @@ export function createRail({ href, jump, star, retry }) {
     view.link.setAttribute('aria-current','location')
     if (!nav.matches(':hover, :focus-within')) {
       setRoving(id)
-      const delta = view.row.getBoundingClientRect().top-list.getBoundingClientRect().top
-      if (delta < 0 || delta + view.row.offsetHeight > list.clientHeight)
-        list.scrollTop += delta - list.clientHeight / 2
+      reveal(view.row)
     }
   }
-  list.addEventListener('scroll',position,{passive:true})
-  function size() {
-    // Prefer the screenshot's ten-pixel rhythm. Very long sessions scroll within the rail.
-    nav.style.setProperty('--pn-step', Math.max(8, Math.min(10, nav.clientHeight / (order.length || 1)))+'px')
+  function reveal(row) {
+    const delta = row.getBoundingClientRect().top-list.getBoundingClientRect().top
+    if (delta < -0.5 || delta + row.offsetHeight > list.clientHeight + 0.5)
+      list.scrollTop += delta - list.clientHeight / 2
+  }
+  list.addEventListener('scroll',() => { edges.sync(); position() },{passive:true})
+  function size(followTail = false) {
+    const wasAtTail = !list.hasAttribute('data-more-after')
+    const resized = edges.size(nav.clientHeight)
+    if (followTail) list.scrollTop = list.scrollHeight
+    else if (resized && !nav.inert && !nav.matches(':hover, :focus-within')) {
+      if (wasAtTail) list.scrollTop = list.scrollHeight
+      else if (active) reveal(entries.get(active).row)
+    }
+    edges.sync()
     position()
   }
   // The panel can shrink with the window held still. Track a native transcript
@@ -168,20 +181,27 @@ export function createRail({ href, jump, star, retry }) {
       if (column) waiting.disconnect()
       else waiting.observe(content,{childList:true,subtree:true})
       const room = column?.getBoundingClientRect()
+      // The title bar can put the panel's midpoint below the page's midpoint.
+      const bounds = panel.getBoundingClientRect()
+      const pageOffset = (document.documentElement.clientHeight - bounds.top - bounds.bottom) / 2
+      nav.style.setProperty('--pn-page-offset', pageOffset+'px')
       const track = nav.getBoundingClientRect()
       const hide = !room?.width || !track.width || track.right + 8 > room.left
       if (nav.inert !== hide) {
         nav.inert = hide
-        if (hide) close()
+        if (hide) { edges.stop(); close() }
       }
       size()
     }
+    resize.observe(document.documentElement)
     resize.observe(panel)
     resize.observe(nav)
     measure()
     return () => { resize.disconnect(); waiting.disconnect() }
   }
   function update(items,saved,status) {
+    const followTail = items.length !== order.length && !nav.matches(':hover, :focus-within') &&
+      list.scrollHeight - list.clientHeight - list.scrollTop < 1
     stars = new Set(saved)
     order = items
     let before = list.firstElementChild
@@ -209,7 +229,7 @@ export function createRail({ href, jump, star, retry }) {
     nav.hidden = !items.length && notice.hidden
     if (shown && keep.has(shown)) show(shown)
     else close()
-    size()
+    size(followTail)
   }
-  return {nav,list,observeGutter,update,current,close,dispose() { clearTimeout(idle) }}
+  return {nav,list,observeGutter,update,current,close,dispose() { clearTimeout(idle); edges.dispose() }}
 }

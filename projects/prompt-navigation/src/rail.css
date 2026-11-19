@@ -1,5 +1,8 @@
 .ocx-prompt-nav {
-  position:absolute; z-index:32; left:8px; top:56px; bottom:92px; width:26px;
+  position:absolute; z-index:32; left:8px; width:26px;
+  --pn-inset:min(18%,180px);
+  --pn-shift:clamp(calc(var(--pn-inset) / -2),var(--pn-page-offset,0px),calc(var(--pn-inset) / 2));
+  inset-block:calc(var(--pn-inset) + var(--pn-shift)) calc(var(--pn-inset) - var(--pn-shift));
   display:flex; flex-direction:column; justify-content:center; pointer-events:none;
   --pn-ink:var(--v2-text-text-base,#443d34);
   --pn-muted:var(--v2-text-text-muted,#746b60);
@@ -13,6 +16,12 @@
 .ocx-prompt-nav .pn-ticks {
   margin:0; padding:0; list-style:none; overflow-y:auto; overflow-x:hidden; min-height:0;
   scrollbar-width:none; overscroll-behavior:contain; pointer-events:auto;
+}
+.ocx-prompt-nav .pn-ticks[data-more-before] { --pn-top:rgb(0 0 0 / .23); }
+.ocx-prompt-nav .pn-ticks[data-more-after] { --pn-bottom:rgb(0 0 0 / .23); }
+.ocx-prompt-nav .pn-ticks:is([data-more-before],[data-more-after]) {
+  mask-image:linear-gradient(to bottom,var(--pn-top,black),black var(--pn-edge),
+    black calc(100% - var(--pn-edge)),var(--pn-bottom,black));
 }
 .ocx-prompt-nav .pn-ticks::-webkit-scrollbar { display:none; }
 .ocx-prompt-nav .pn-row { padding:0; margin:0; list-style:none; height:var(--pn-step,10px); }

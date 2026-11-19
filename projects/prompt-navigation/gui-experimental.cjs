@@ -70,6 +70,79 @@ async function historyIndex(client, sessionID, signal) {
   return rows;
 }
 
+// src/edge-scroll.js
+var step = 10;
+var dwellMs = 550;
+var repeatMs = 140;
+function edgeScroll(list, nav, closePreview) {
+  const events = new AbortController();
+  const options = { signal: events.signal };
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let timer, direction = 0, moving = false, edge = 0, capacity = -1;
+  function stop() {
+    clearTimeout(timer);
+    direction = 0;
+    if (moving) list.scrollTo({ top: list.scrollTop, behavior: "instant" });
+    moving = false;
+  }
+  function sync() {
+    const top = list.scrollTop;
+    const end = list.scrollHeight - list.clientHeight;
+    const before = edge > 0 && top > 0.5;
+    const after = edge > 0 && end - top > 0.5;
+    list.toggleAttribute("data-more-before", before);
+    list.toggleAttribute("data-more-after", after);
+    if (direction < 0 && !before || direction > 0 && !after) stop();
+  }
+  function size(height) {
+    const slots = Math.floor(height / step);
+    const resized = slots !== capacity;
+    if (resized) {
+      stop();
+      capacity = slots;
+      edge = step * Math.min(3, Math.max(0, Math.floor((slots - 1) / 2)));
+      list.style.maxHeight = slots * step + "px";
+      list.style.setProperty("--pn-edge", edge + "px");
+    }
+    return resized;
+  }
+  function advance() {
+    if (!direction || nav.inert || nav.hidden || document.hidden) return stop();
+    if (!moving) {
+      moving = true;
+      closePreview();
+    }
+    list.scrollBy({ top: direction * step, behavior: reducedMotion.matches ? "instant" : "smooth" });
+    sync();
+    if (direction) timer = setTimeout(advance, repeatMs);
+  }
+  function hover(event) {
+    if (event.pointerType !== "mouse" || event.buttons || nav.inert || !(list.hasAttribute("data-more-before") || list.hasAttribute("data-more-after"))) return stop();
+    const rect = list.getBoundingClientRect();
+    let next = 0;
+    if (event.clientY < rect.top + edge && list.hasAttribute("data-more-before")) next = -1;
+    else if (event.clientY >= rect.bottom - edge && list.hasAttribute("data-more-after")) next = 1;
+    if (next === direction) return;
+    stop();
+    direction = next;
+    if (next) timer = setTimeout(advance, dwellMs);
+  }
+  list.style.setProperty("--pn-step", step + "px");
+  list.addEventListener("pointermove", hover, options);
+  for (const event of ["pointerleave", "pointerdown", "pointercancel", "wheel"]) {
+    list.addEventListener(event, stop, { ...options, passive: true });
+  }
+  nav.addEventListener("keydown", stop, options);
+  window.addEventListener("blur", stop, options);
+  document.addEventListener("visibilitychange", stop, options);
+  return { size, sync, stop, get moving() {
+    return moving;
+  }, dispose() {
+    stop();
+    events.abort();
+  } };
+}
+
 // src/rail.js
 function el(tag, cls) {
   const node = document.createElement(tag);
@@ -132,6 +205,7 @@ function createRail({ href, jump, star, retry }) {
     shown = void 0;
     pop.hidden = true;
   }
+  const edges = edgeScroll(list, nav, close);
   function show(id) {
     clearTimeout(idle);
     const entry = entries.get(id);
@@ -148,6 +222,7 @@ function createRail({ href, jump, star, retry }) {
     position();
   }
   function leave() {
+    if (!shown) return;
     clearTimeout(idle);
     idle = setTimeout(() => {
       if (!pop.matches(":hover, :focus-within") && !entries.get(shown)?.link.matches(":hover, :focus-visible")) close();
@@ -205,7 +280,7 @@ function createRail({ href, jump, star, retry }) {
       show(id);
     };
     link.onpointerenter = (event) => {
-      if (event.pointerType !== "touch") show(id);
+      if (event.pointerType !== "touch" && !edges.moving) show(id);
     };
     link.onpointerleave = leave;
     link.onclick = (event) => {
@@ -227,14 +302,27 @@ function createRail({ href, jump, star, retry }) {
     view.link.setAttribute("aria-current", "location");
     if (!nav.matches(":hover, :focus-within")) {
       setRoving(id);
-      const delta = view.row.getBoundingClientRect().top - list.getBoundingClientRect().top;
-      if (delta < 0 || delta + view.row.offsetHeight > list.clientHeight)
-        list.scrollTop += delta - list.clientHeight / 2;
+      reveal(view.row);
     }
   }
-  list.addEventListener("scroll", position, { passive: true });
-  function size() {
-    nav.style.setProperty("--pn-step", Math.max(8, Math.min(10, nav.clientHeight / (order.length || 1))) + "px");
+  function reveal(row) {
+    const delta = row.getBoundingClientRect().top - list.getBoundingClientRect().top;
+    if (delta < -0.5 || delta + row.offsetHeight > list.clientHeight + 0.5)
+      list.scrollTop += delta - list.clientHeight / 2;
+  }
+  list.addEventListener("scroll", () => {
+    edges.sync();
+    position();
+  }, { passive: true });
+  function size(followTail = false) {
+    const wasAtTail = !list.hasAttribute("data-more-after");
+    const resized = edges.size(nav.clientHeight);
+    if (followTail) list.scrollTop = list.scrollHeight;
+    else if (resized && !nav.inert && !nav.matches(":hover, :focus-within")) {
+      if (wasAtTail) list.scrollTop = list.scrollHeight;
+      else if (active) reveal(entries.get(active).row);
+    }
+    edges.sync();
     position();
   }
   function observeGutter(panel, content, findColumn) {
@@ -256,14 +344,21 @@ function createRail({ href, jump, star, retry }) {
       if (column) waiting.disconnect();
       else waiting.observe(content, { childList: true, subtree: true });
       const room = column?.getBoundingClientRect();
+      const bounds = panel.getBoundingClientRect();
+      const pageOffset = (document.documentElement.clientHeight - bounds.top - bounds.bottom) / 2;
+      nav.style.setProperty("--pn-page-offset", pageOffset + "px");
       const track = nav.getBoundingClientRect();
       const hide = !room?.width || !track.width || track.right + 8 > room.left;
       if (nav.inert !== hide) {
         nav.inert = hide;
-        if (hide) close();
+        if (hide) {
+          edges.stop();
+          close();
+        }
       }
       size();
     }
+    resize.observe(document.documentElement);
     resize.observe(panel);
     resize.observe(nav);
     measure();
@@ -273,6 +368,7 @@ function createRail({ href, jump, star, retry }) {
     };
   }
   function update(items, saved, status) {
+    const followTail = items.length !== order.length && !nav.matches(":hover, :focus-within") && list.scrollHeight - list.clientHeight - list.scrollTop < 1;
     stars = new Set(saved);
     order = items;
     let before = list.firstElementChild;
@@ -305,16 +401,20 @@ function createRail({ href, jump, star, retry }) {
     nav.hidden = !items.length && notice.hidden;
     if (shown && keep.has(shown)) show(shown);
     else close();
-    size();
+    size(followTail);
   }
   return { nav, list, observeGutter, update, current, close, dispose() {
     clearTimeout(idle);
+    edges.dispose();
   } };
 }
 
 // src/rail.css
 var rail_default = `.ocx-prompt-nav {
-  position:absolute; z-index:32; left:8px; top:56px; bottom:92px; width:26px;
+  position:absolute; z-index:32; left:8px; width:26px;
+  --pn-inset:min(18%,180px);
+  --pn-shift:clamp(calc(var(--pn-inset) / -2),var(--pn-page-offset,0px),calc(var(--pn-inset) / 2));
+  inset-block:calc(var(--pn-inset) + var(--pn-shift)) calc(var(--pn-inset) - var(--pn-shift));
   display:flex; flex-direction:column; justify-content:center; pointer-events:none;
   --pn-ink:var(--v2-text-text-base,#443d34);
   --pn-muted:var(--v2-text-text-muted,#746b60);
@@ -328,6 +428,12 @@ var rail_default = `.ocx-prompt-nav {
 .ocx-prompt-nav .pn-ticks {
   margin:0; padding:0; list-style:none; overflow-y:auto; overflow-x:hidden; min-height:0;
   scrollbar-width:none; overscroll-behavior:contain; pointer-events:auto;
+}
+.ocx-prompt-nav .pn-ticks[data-more-before] { --pn-top:rgb(0 0 0 / .23); }
+.ocx-prompt-nav .pn-ticks[data-more-after] { --pn-bottom:rgb(0 0 0 / .23); }
+.ocx-prompt-nav .pn-ticks:is([data-more-before],[data-more-after]) {
+  mask-image:linear-gradient(to bottom,var(--pn-top,black),black var(--pn-edge),
+    black calc(100% - var(--pn-edge)),var(--pn-bottom,black));
 }
 .ocx-prompt-nav .pn-ticks::-webkit-scrollbar { display:none; }
 .ocx-prompt-nav .pn-row { padding:0; margin:0; list-style:none; height:var(--pn-step,10px); }
