@@ -48,7 +48,7 @@ for (const [i, row] of rows.entries()) {
 }
 stage.append(rail.nav)
 rail.update(rows,saved,'ready')
-new ResizeObserver(()=>rail.size(stage.clientWidth)).observe(stage)
+rail.observeGutter(stage,paper,()=>paper.querySelector('section'))
 document.addEventListener('pointerdown',e=>{if (!rail.nav.contains(e.target)) rail.close()})
 function track() {
   const line = paper.getBoundingClientRect().top+42

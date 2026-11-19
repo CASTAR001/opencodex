@@ -78,6 +78,7 @@ function el(tag, cls) {
 }
 function createRail({ href, jump, star, retry }) {
   const nav = el("nav", "ocx-prompt-nav");
+  nav.inert = true;
   nav.setAttribute("aria-label", "\u63D0\u793A\u8BCD\u5BFC\u822A");
   const list = el("ol", "pn-ticks");
   list.setAttribute("aria-label", "\u5F53\u524D\u4F1A\u8BDD\u7684\u63D0\u793A\u8BCD");
@@ -236,6 +237,41 @@ function createRail({ href, jump, star, retry }) {
     nav.style.setProperty("--pn-step", Math.max(8, Math.min(10, nav.clientHeight / (order.length || 1))) + "px");
     position();
   }
+  function observeGutter(panel, content, findColumn) {
+    let column, container;
+    const resize = new ResizeObserver(measure);
+    const waiting = new MutationObserver(measure);
+    function measure() {
+      const next = column?.isConnected && column.getClientRects().length ? column : findColumn();
+      if (next !== column) {
+        if (column) resize.unobserve(column);
+        if (container) resize.unobserve(container);
+        column = next;
+        container = column?.parentElement;
+        if (column) {
+          resize.observe(column);
+          if (container) resize.observe(container);
+        }
+      }
+      if (column) waiting.disconnect();
+      else waiting.observe(content, { childList: true, subtree: true });
+      const room = column?.getBoundingClientRect();
+      const track = nav.getBoundingClientRect();
+      const hide = !room?.width || !track.width || track.right + 8 > room.left;
+      if (nav.inert !== hide) {
+        nav.inert = hide;
+        if (hide) close();
+      }
+      size();
+    }
+    resize.observe(panel);
+    resize.observe(nav);
+    measure();
+    return () => {
+      resize.disconnect();
+      waiting.disconnect();
+    };
+  }
   function update(items, saved, status) {
     stars = new Set(saved);
     order = items;
@@ -271,7 +307,7 @@ function createRail({ href, jump, star, retry }) {
     else close();
     size();
   }
-  return { nav, list, size, update, current, close, dispose() {
+  return { nav, list, observeGutter, update, current, close, dispose() {
     clearTimeout(idle);
   } };
 }
@@ -287,6 +323,7 @@ var rail_default = `.ocx-prompt-nav {
   font:inherit; color:var(--pn-ink); -webkit-app-region:no-drag;
 }
 .ocx-prompt-nav[hidden], .ocx-prompt-nav [hidden] { display:none !important; }
+.ocx-prompt-nav[inert] { visibility:hidden; }
 .ocx-prompt-nav * { box-sizing:border-box; }
 .ocx-prompt-nav .pn-ticks {
   margin:0; padding:0; list-style:none; overflow-y:auto; overflow-x:hidden; min-height:0;
@@ -398,12 +435,7 @@ function mount(ctx, session, marker) {
     }
   });
   host.append(rail.nav);
-  function size() {
-    rail.size(host.clientWidth);
-  }
-  size();
-  const resize = new ResizeObserver(size);
-  resize.observe(host);
+  const stopGutter = rail.observeGutter(host, frame, () => frame.querySelector("[data-timeline-virtual-content] [data-timeline-row][data-message-id]"));
   function sample() {
     sampleFrame = 0;
     const viewport = marker.closest("[data-scrollable]") || [...frame.querySelectorAll(viewportSelector)].find((el2) => el2.clientHeight && el2.checkVisibility());
@@ -455,7 +487,7 @@ function mount(ctx, session, marker) {
     cancelAnimationFrame(sampleFrame);
     seeking?.abort();
     cancelAnimationFrame(repeatFrame);
-    resize.disconnect();
+    stopGutter();
     frame.removeEventListener("scroll", scrolling, true);
     host.removeEventListener("pointerdown", outside);
     rail.dispose();
