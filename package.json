@@ -1,0 +1,15 @@
+{
+  "name": "prompt-navigation",
+  "version": "0.1.0-alpha.1",
+  "description": "Compact left-side prompt navigation for OpenCode Desktop",
+  "license": "MIT",
+  "type": "module",
+  "exports": { "./gui-experimental": "./gui-experimental.cjs" },
+  "files": ["gui-experimental.cjs", "CHANGELOG.md"],
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node build.mjs --check && node --test",
+    "preview": "node examples/preview.mjs"
+  },
+  "devDependencies": { "esbuild": "0.25.12" }
+}

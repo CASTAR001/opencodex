@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>潮间带观察手记 · 提示词导航预览</title>
+<style>
+:root { color-scheme:light; font-family:system-ui,sans-serif; color:#463d34;
+  --v2-text-text-base:#463d34; --v2-text-text-muted:#766958; --v2-text-text-accent:#9f572d;
+  --v2-background-bg-base:#fffaf2; --v2-elevation-raised:0 3px 18px #49321f29; }
+* {box-sizing:border-box}
+body {margin:0; height:100dvh; padding:10px; background:#f4eddf;display:flex;flex-direction:column}
+main {position:relative; flex:1;min-height:0; }
+.preview-frame {height:100%;display:flex;flex-direction:column;
+  background:#fffaf2;box-shadow:0 1px 4px #59422215;border:1px solid #ded4c4;border-radius:11px;overflow:hidden}
+header {display:flex;align-items:center;gap:9px;height:48px;flex:none;border-bottom:1px solid #e8dfd1;padding:0 18px;color:#736759;font-size:13px}
+h1 {font-family:inherit;font-size:14px;color:#493b2f;font-weight:600}
+article {position:relative;overflow:auto;min-height:0;flex:1;scrollbar-width:thin;overscroll-behavior:contain;padding:14px clamp(16px,5vw,88px) 40vh;
+font-family:ui-serif,serif;font-size:16px;line-height:1.7}
+section {max-width:720px;margin:0 auto 30px;display:flow-root}
+p {margin:12px 0} h2 {font-weight:600;line-height:1.5;font-size:20px;margin:18px 0 7px}
+.prompt {display:table;max-width:88%;margin:10px 0 24px auto;border-radius:13px;padding:9px 15px;background:#fae1cb;color:#4d3529}
+table{border-collapse:collapse;width:100%;font-size:.94em} td,th {border-bottom:1px solid #e8ddcd;text-align:left;padding:.3em .7em}
+footer {padding:9px 16px;color:#7a7064;font-size:12px;border-top:1px solid #e8dfd1}
+@media(max-width:600px){body{padding:5px}article{font-size:15px}header{padding:0 12px}}
+/* RAIL */
+</style>
+<main><div class="preview-frame"><header><span>Coast</span><span aria-hidden="true">/</span><h1></h1></header><article aria-label="示例对话"></article><footer>离线交互预览 · 示例会话</footer></div></main>
+<script>/* DEMO */</script></html>
