@@ -1,7 +1,8 @@
-import { Plugin, Panel, MenuItem, Style } from '@opencode/plugin/gui'
+import { Plugin, Panel, MenuItem, Slot, Style } from '@opencode/plugin/gui'
 import { createEffect, createMemo, onCleanup } from 'solid-js'
 import { insert } from 'solid-js/web'
 import { reader } from './reader.js'
+import { filePreviewSlot } from './file-preview.js'
 import styles from './reader.css'
 
 const prefix = 'read/'
@@ -52,6 +53,7 @@ export default Plugin.define({
   setup(ctx) {
     const tabs = new Map()
     ctx.add(Style, styles)
+    ctx.add(Slot, { at: 'session.panel.end', render: props => filePreviewSlot(ctx, props) })
     ctx.add(Panel, {
       id: 'reader', region: 'side',
       list: ({ open }) => open.flatMap(id => {

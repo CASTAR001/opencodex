@@ -2,6 +2,7 @@ import { createComponent, createMemo, onCleanup } from 'solid-js'
 import { insert } from 'solid-js/web'
 import { projectDocument } from './document.js'
 import { bindFootnotes } from './navigation.js'
+import { bindWebLinks } from './links.js'
 
 export function reader(ctx, source, path, session) {
   const rail = document.createElement('div')
@@ -11,7 +12,7 @@ export function reader(ctx, source, path, session) {
   const scope = 'ocx-fn-' + crypto.randomUUID()
   article.dataset.noteScope = scope
   rail.append(article)
-  const model = createMemo(() => projectDocument(source(), scope))
+  const model = createMemo(() => projectDocument(source(), scope, path))
   const markdown = getText => createComponent(ctx.ui.Markdown, { get text() { return getText() } })
   const body = document.createElement('div')
   const endnotes = document.createElement('div')
@@ -58,6 +59,7 @@ export function reader(ctx, source, path, session) {
     return section
   })
   onCleanup(bindFootnotes(article))
+  onCleanup(bindWebLinks(article, { open: url => ctx.system.openExternal(url), copy: url => ctx.system.copy(url) }))
   function openLocalFile(event) {
     if (event.type === 'keydown' && event.key !== 'Enter') return
     const href = event.target.closest?.('a[data-local-link]')?.dataset.localLink

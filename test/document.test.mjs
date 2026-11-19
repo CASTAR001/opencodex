@@ -2,6 +2,20 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { projectDocument, linkName } from '../src/document.js'
 
+test('document-relative inline and reference images share the workspace image loader', () => {
+  const doc = projectDocument('![海](../img/sea.png "海边")\n\n![图][photo]\n\n[photo]: ./pic.svg\n\n![远](https://example.org/pic.png)', 'id', 'notes/第二章/readme.md')
+  assert.ok(doc.body.includes('![海](<notes/img/sea.png> "海边")'))
+  assert.ok(doc.body.includes('![图](<notes/' + encodeURIComponent('第二章') + '/pic.svg>)'))
+  assert.ok(doc.body.includes('![远](https://example.org/pic.png)'))
+})
+
+test('formats a GFM alert marker only at the head of a quote', () => {
+  const result = projectDocument('> [!NOTE]\n> Observation[^n]\n\n`[!NOTE]`\n\n[^n]: data','test')
+  assert.match(result.body, /> \*\*说明\*\* {2}\n>/)
+  assert.match(result.body, /`\[!NOTE\]`/)
+  assert.equal(result.notes.length, 1)
+})
+
 test('numbers by first reference, retains each origin and note paragraph', () => {
   const doc = projectDocument('A[^b] B[^a] C[^B] D[^missing]\r\n\r\n[^a]: second\r\n\r\n[^b]: first *note*\r\n\r\n    second paragraph', 'test')
   assert.deepEqual(doc.notes.map(n => n.key), ['b','a'])
