@@ -1,6 +1,6 @@
 # OpenCodex · OpenCode Desktop 插件合集
 
-面向 macOS OpenCode Desktop 2.3.2 的模块化界面增强项目。代码块插件 02 已完成 `0.1.0-alpha.3` 本机试用。会话统计插件 06 在会话顶栏常驻显示缓存命中率、跨模型实时 TPS 和上下文使用率，点击读数可打开明细。
+面向 macOS OpenCode Desktop 2.3.2 的模块化界面增强项目。代码块插件 02 已完成 `0.1.0-alpha.3` 本机试用。会话统计插件 06 在会话顶栏显示缓存命中率、跨模型实时 TPS 和上下文使用率，点击读数可打开明细。顶栏空间不足时自动隐藏读数。
 
 - [功能需求与开发顺序](REQUIREMENTS.md)
 - [逐项可行性与源码依据](FEASIBILITY.md)
@@ -17,8 +17,8 @@
 | 03 | [Markdown Presentation Enhancer](projects/markdown-presentation/README.md) | 预研 |
 | 04 | [Compact Auto Collapse](projects/compact-auto-collapse/README.md) | 预研 |
 | 05 | [Execution Timeline Auto Collapse](projects/execution-timeline/README.md) | 预研 |
-| 06 | [Session Metrics Monitor](projects/session-metrics/README.md) | `0.1.0-alpha.3`，本机试用 |
-| 07 | [Provider Quota Monitor](projects/provider-quota/README.md) | `0.1.0-alpha.3`，可安装。用量筛选和额度刷新与页签同排显示 |
+| 06 | [Session Metrics Monitor](projects/session-metrics/README.md) | `0.1.0-alpha.4`，已通过本机验收，顶栏收窄时隐藏读数，恢复后继续显示 |
+| 07 | [Provider Quota Monitor](projects/provider-quota/README.md) | `0.1.0-alpha.5`，已通过本机验收，从钱包查看剩余额度及用量，新建对话也可打开 |
 | 08 | [File Review Enhancer](projects/file-review-enhancer/README.md) | `0.1.0-alpha.3`，从右侧文件树阅读 Markdown，支持脚注往返、原生网站图标和短链接名称 |
 | 09 | [Bilingual Fonts](projects/bilingual-fonts/README.md) | `0.1.0-alpha.1`，已通过 macOS 本机验收。界面正文和代码可分别设置中西文字体 |
 

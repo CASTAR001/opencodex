@@ -359,7 +359,9 @@ function header(ctx, input, useSession, open) {
   button.append(label, hit, speed, windowUsage);
   button.onclick = () => open(input.session);
   (0, import_solid_js3.createEffect)(() => {
-    button.hidden = !input.active;
+    button.hidden = !input.active || input.compact;
+  });
+  (0, import_solid_js3.createEffect)(() => {
     if (!input.active) return;
     const source = useSession(input.session);
     const locale = ctx.locale.locale();
@@ -375,11 +377,11 @@ function header(ctx, input, useSession, open) {
       const rate = estimate?.tps ?? turn?.tps;
       const value = (rate == null ? "\u2014" : number.format(rate)) + " TPS";
       const partial = coverage !== "complete";
-      label.textContent = t(input.compact ? "cacheShort" : "cacheLabel");
+      label.textContent = t("cacheLabel");
       hit.textContent = cache + (partial && ratio != null ? "*" : "");
       speed.textContent = (estimate ? "\u2248" : previous && turn ? t("prevShort") + " " : "") + value;
       const used = context?.percent == null ? "\u2014" : percent.format(context.percent / 100);
-      windowUsage.textContent = t(input.compact ? "contextShort" : "context") + " " + used;
+      windowUsage.textContent = t("context") + " " + used;
       const hint = [t("hit") + " " + cache, t(estimate ? "estimated" : previous ? "previous" : "recent") + " " + value];
       hint.push(t("context") + " " + used + (context ? " (" + number.format(context.used) + " / " + (context.limit > 0 ? number.format(context.limit) : "\u2014") + ")" : ""));
       if (partial) hint.push(t(coverage));

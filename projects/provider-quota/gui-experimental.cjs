@@ -74,11 +74,189 @@ var contract = {
 };
 
 // src/style.css
-var style_default = ".pq-page {\n  color: var(--text-base);\n  font: inherit;\n  padding: 0 0 12px;\n  min-width: 0;\n}\n.pq-toolbar,\n.pq-toolbar nav,\n.pq-controls,\n.pq-top,\n.pq-counters {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n}\n.pq-toolbar {\n  flex-wrap: wrap;\n  margin-bottom: 10px;\n}\n.pq-open,\n.pq-page button,\n.pq-page select {\n  font: inherit;\n  color: var(--text-base);\n  cursor: pointer;\n  line-height: 1.5;\n  border-radius: 6px;\n  padding: 3px 9px;\n}\n.pq-open:hover,\n.pq-page button:hover,\n.pq-page button[aria-pressed='true'] {\n  background: var(--surface-base-hover);\n  color: var(--text-strong);\n}\n.pq-page button:disabled {\n  opacity: 0.55;\n  cursor: default;\n}\n.pq-page button,\n.pq-page select {\n  border: 1px solid var(--border-weak-base);\n  background: var(--surface-base);\n}\n.pq-controls {\n  justify-content: flex-end;\n  margin-inline-start: auto;\n  flex-wrap: wrap;\n}\n.pq-controls:empty {\n  display: none;\n}\n.pq-counters {\n  gap: 24px;\n  margin: 8px 0 16px;\n}\n.pq-counters span,\n.pq-muted,\n.pq-card small {\n  color: var(--text-weak);\n  font-size: 12px;\n}\n.pq-counters strong {\n  display: block;\n  font-size: 22px;\n  font-weight: 600;\n  color: var(--text-strong);\n}\n.pq-page table {\n  width: 100%;\n  border-collapse: collapse;\n  font-variant-numeric: tabular-nums;\n  font-size: 13px;\n}\n.pq-scroll {\n  overflow-x: auto;\n}\n.pq-page td,\n.pq-page th {\n  text-align: right;\n  padding: 7px 6px;\n  border-bottom: 1px solid var(--border-weak-base);\n  white-space: nowrap;\n}\n.pq-page th:first-child,\n.pq-page td:first-child {\n  text-align: left;\n  white-space: normal;\n  overflow-wrap: anywhere;\n}\n.pq-page h3 {\n  font-size: 14px;\n  font-weight: 600;\n  margin: 14px 0 5px;\n}\n.pq-muted,\n.pq-card small {\n  display: block;\n  margin: 5px 0;\n}\n.pq-card {\n  border: 1px solid var(--border-weak-base);\n  border-radius: 9px;\n  padding: 10px 12px;\n  margin-bottom: 8px;\n}\n.pq-top {\n  justify-content: space-between;\n}\n.pq-top h3 {\n  margin: 0;\n}\n.pq-page details {\n  margin: 12px 0;\n}\n.pq-page summary {\n  cursor: pointer;\n}\n.pq-open {\n  display: inline-grid;\n  place-items: center;\n  width: 28px;\n  height: 28px;\n  padding: 0;\n  color: var(--text-weak);\n}\n.pq-open[hidden] {\n  display: none;\n}\n.pq-open:focus-visible {\n  outline: 2px solid var(--border-focus);\n}\n";
+var style_default = `.pq-page {
+  color: var(--text-base);
+  font: inherit;
+  padding: 0 0 12px;
+  min-width: 0;
+}
+.pq-toolbar,
+.pq-toolbar nav,
+.pq-controls,
+.pq-top,
+.pq-counters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pq-toolbar {
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.pq-open,
+.pq-page button,
+.pq-page select {
+  font: inherit;
+  color: var(--text-base);
+  cursor: pointer;
+  line-height: 1.5;
+  border-radius: 6px;
+  padding: 3px 9px;
+}
+.pq-open:hover,
+.pq-page button:hover,
+.pq-page button[aria-pressed='true'] {
+  background: var(--surface-base-hover);
+  color: var(--text-strong);
+}
+.pq-page button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.pq-page button,
+.pq-page select {
+  border: 1px solid var(--border-weak-base);
+  background: var(--surface-base);
+}
+.pq-controls {
+  justify-content: flex-end;
+  margin-inline-start: auto;
+  flex-wrap: wrap;
+}
+.pq-controls:empty {
+  display: none;
+}
+.pq-counters {
+  gap: 24px;
+  margin: 8px 0 16px;
+}
+.pq-counters span,
+.pq-muted,
+.pq-card small {
+  color: var(--text-weak);
+  font-size: 12px;
+}
+.pq-counters strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.pq-page table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+.pq-scroll {
+  overflow-x: auto;
+}
+.pq-page td,
+.pq-page th {
+  text-align: right;
+  padding: 7px 6px;
+  border-bottom: 1px solid var(--border-weak-base);
+  white-space: nowrap;
+}
+.pq-page th:first-child,
+.pq-page td:first-child {
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.pq-page h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 14px 0 5px;
+}
+.pq-muted,
+.pq-card small {
+  display: block;
+  margin: 5px 0;
+}
+.pq-card {
+  border: 1px solid var(--border-weak-base);
+  border-radius: 9px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.pq-top {
+  justify-content: space-between;
+}
+.pq-card > h3:first-child { margin-block-start: 0; }
+.pq-top h3 {
+  margin: 0;
+}
+.pq-page details {
+  margin: 12px 0;
+}
+.pq-page summary {
+  cursor: pointer;
+}
+.pq-open {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--text-weak);
+}
+.pq-open[hidden] {
+  display: none;
+}
+.pq-open:focus-visible {
+  outline: 2px solid var(--border-focus);
+}
+.pq-open {
+  --pq-wallet: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 7V4.5a1 1 0 0 0-1.2-1L4.7 5.6A2 2 0 0 0 3 7.6V15a1.5 1.5 0 0 0 1.5 1.5H16a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H5'/%3E%3Cpath d='M17 10h-3a1.6 1.6 0 0 0 0 3.2h3'/%3E%3C/svg%3E");
+}
+.pq-open { flex: 0 0 28px; -webkit-app-region: no-drag; }
+.pq-open::before {
+  content: ''; display: inline-block; width: 18px; height: 18px;
+  background: currentColor; mask: var(--pq-wallet) center / contain no-repeat;
+}
+/* Anchor inside the draft so the button clears both native title bars and sidebars. */
+[data-component="new-session"] { anchor-name: --pq-draft; }
+.pq-draft-entry:not(:empty) {
+  position: fixed;
+  position-anchor: --pq-draft;
+  top: calc(anchor(top, 40px) + 10px);
+  right: calc(anchor(right, 0px) + 12px);
+  z-index: 2;
+}
+
+.pq-narrow-entry { display: none; }
+@media (max-width: 767px) {
+  .pq-narrow-entry:not(:empty) {
+    display: flex;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+    padding-inline: 8px;
+    order: 9999;
+  }
+  .session-header-actions .pq-open { display: none; }
+}
+`;
 
 // src/plugin.js
 var number = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 2 });
 var fmt = (n) => Number.isFinite(n) ? number.format(n) : "\u2014";
+var quotaNumber = new Intl.NumberFormat("zh-CN", { maximumSignificantDigits: 21 });
+function remainingText(row) {
+  if (row.unit && row.unit !== "%") {
+    return row.remaining != null ? quotaNumber.format(row.remaining) + " " + row.unit : "\u672A\u8FD4\u56DE\u4F59\u989D";
+  }
+  let percent;
+  if (row.unit === "%" && row.remaining != null) percent = row.remaining;
+  else if (row.unit === "%" && row.used != null) percent = 100 - row.used;
+  else if (row.total > 0) {
+    const left = row.remaining ?? row.count ?? (row.used != null ? row.total - row.used : void 0);
+    if (left != null) percent = left / row.total * 100;
+  }
+  if (percent != null) return "\u5269\u4F59 " + fmt(percent) + "%";
+  if (row.remaining != null) return "\u5269\u4F59 " + quotaNumber.format(row.remaining);
+  return row.state ?? "\u672A\u8FD4\u56DE\u5269\u4F59\u6BD4\u4F8B";
+}
 var time = (t) => new Date(t).toLocaleString("zh-CN", {
   month: "numeric",
   day: "numeric",
@@ -159,20 +337,22 @@ function usageView(stats, media, providers, showMini) {
   }
   return box;
 }
-function dashboard(ctx, session, cache) {
+function dashboard(ctx, session) {
   const root = el("div", null, "pq-page");
   const toolbar = el("div", null, "pq-toolbar"), nav = el("nav"), controls = el("div", null, "pq-controls"), content = el("div"), status = el("p", null, "pq-muted");
   status.setAttribute("role", "status");
-  const pages = ["\u7528\u91CF\u7EDF\u8BA1", "\u8D26\u6237\u989D\u5EA6"];
-  let index = 0, days = 7, filter = "", alive = true, serial = 0, active, clock, queued, stats, media, lastRead;
+  const pages = { quota: "\u5269\u4F59\u989D\u5EA6", usage: "\u7528\u91CF\u7EDF\u8BA1" };
+  let index = "quota", days = 7, filter = "", alive = true, serial = 0, active, clock, queued, stats, media, lastRead;
   const location = session.location;
   const client = session.server.client;
   const api = client.rpc(contract);
-  const accountKey = session.server.id + "\n" + (location?.workspaceID || "") + "\n" + (location?.directory || "");
-  if (!cache.has(accountKey)) cache.set(accountKey, /* @__PURE__ */ new Map());
-  const history = cache.get(accountKey);
-  const busy = /* @__PURE__ */ new Set();
-  const buttons = pages.map((label, i) => btn(label, () => switchTo(i)));
+  const lifetime = new AbortController();
+  const history = /* @__PURE__ */ new Map();
+  const busy = /* @__PURE__ */ new Map();
+  const keys = Object.keys(pages);
+  const buttons = keys.map((key) => btn(pages[key], () => {
+    if (key !== index) switchTo(key);
+  }));
   nav.append(...buttons);
   toolbar.append(nav, controls);
   root.append(toolbar, content, status);
@@ -189,23 +369,26 @@ function dashboard(ctx, session, cache) {
   const options = () => configured.map((row) => [row.family, families[row.family]]);
   function mimoCard() {
     const card = el("section", null, "pq-card");
-    card.append(el("h3", "\u5C0F\u7C73 MiMo \xB7 Standard"), el("small", "\xA599/\u6708 \xB7 110 \u4EBF Credits \xB7 \u672C\u673A\u4F30\u7B97"));
+    const quota = index === "quota";
+    const caption = quota ? "\u4EC5\u6263\u9664\u6240\u5217\u65F6\u6BB5\u7528\u91CF\u540E\u7684\u6708\u989D\u5EA6\u5360\u6BD4" : "\u6240\u5217\u65F6\u6BB5\u7528\u91CF\u5360\u6708\u989D\u5EA6\u7684\u6BD4\u4F8B";
+    card.append(el("h3", "\u5C0F\u7C73 MiMo \xB7 Standard"), el("small", "\xA599/\u6708 \xB7 110 \u4EBF Credits \xB7 \u672C\u673A\u4F30\u7B97 \xB7 " + caption));
     for (const [key, label] of [
       ["today", "\u4ECA\u5929"],
       ["week", "\u8FD1 7 \u5929"]
     ]) {
       const reading = mimo?.[key];
       const n = reading?.percent;
-      const value = Number.isFinite(n) ? n > 0 && n < 0.01 ? "<0.01%" : fmt(n) + "%" : "\u2014";
+      const display = quota ? 100 - n : n;
+      const value = Number.isFinite(n) ? display > 0 && display < 0.01 ? "<0.01%" : fmt(display) + "%" : "\u2014";
       card.append(
-        el("div", label + "\u3000" + value + (reading?.partial ? "\uFF08\u90E8\u5206\u8BB0\u5F55\u7F3A\u5C11\u53EF\u6362\u7B97\u7528\u91CF\uFF09" : ""))
+        el("div", label + (quota ? "\u3000\u5269\u4F59 " : "\u3000") + value + (reading?.partial ? "\uFF08\u90E8\u5206\u8BB0\u5F55\u7F3A\u5C11\u53EF\u6362\u7B97\u7528\u91CF\uFF09" : ""))
       );
     }
     if (mimo?.problem) card.append(el("small", mimo.problem));
     return card;
   }
   function drawUsage() {
-    if (!discovered || !configured.length || index !== 0) return;
+    if (!discovered || !configured.length || index !== "usage") return;
     const general = configured.filter((r) => r.family !== "mimo" && (!filter || r.family === filter));
     const period = controls.querySelector('[aria-label="\u7EDF\u8BA1\u65F6\u6BB5"]');
     if (period) period.hidden = !general.length;
@@ -226,7 +409,7 @@ function dashboard(ctx, session, cache) {
     if (!alive || document.hidden) return;
     const ticket = ++inventorySerial;
     try {
-      const list = await api.inventory({}, { location, signal: AbortSignal.timeout(12e3) });
+      const list = await api.inventory({}, { location, signal: AbortSignal.any([lifetime.signal, AbortSignal.timeout(12e3)]) });
       if (!alive || ticket !== inventorySerial) return;
       const changed = !discovered || JSON.stringify(list) !== JSON.stringify(configured);
       discovered = true;
@@ -234,10 +417,11 @@ function dashboard(ctx, session, cache) {
       for (const [id, cached] of history) {
         if (JSON.stringify(list.find((r) => r.family === id)) !== cached.connection) history.delete(id);
       }
+      const changedAccounts = list.filter((row) => JSON.stringify(configured.find((previous) => previous.family === row.family)) !== JSON.stringify(row));
       configured = list;
       if (!has(filter)) filter = "";
       stats = media = mimo = lastRead = void 0;
-      switchTo(index);
+      switchTo(index, changedAccounts);
     } catch {
       if (alive && ticket === inventorySerial) status.textContent = "\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6\u5F53\u524D\u670D\u52A1\u5546\u914D\u7F6E\u3002";
     }
@@ -247,7 +431,7 @@ function dashboard(ctx, session, cache) {
     const token = ++serial, controller = new AbortController();
     active = controller;
     const now = /* @__PURE__ */ new Date(), span = range(days, now), week = range(7, now);
-    const general = index === 0 && configured.some((r) => r.family !== "mimo");
+    const general = index === "usage" && configured.some((r) => r.family !== "mimo");
     const readOptions = { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15e3)]) };
     const local = { ...readOptions, location };
     try {
@@ -268,10 +452,10 @@ function dashboard(ctx, session, cache) {
       media = calls.status === "fulfilled" ? calls.value : void 0;
       mimo = estimate.status === "fulfilled" ? estimate.value : { problem: "\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6\u672C\u673A\u7528\u91CF" };
       if (data.status === "fulfilled" && general) stats = data.value;
-      if (index === 0) drawUsage();
+      if (index === "usage") drawUsage();
       else drawQuotas();
       if (data.status === "rejected") status.textContent = "\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6\u6A21\u578B\u7EDF\u8BA1\u3002";
-      else if (index === 0) {
+      else if (index === "usage") {
         lastRead = Date.now();
         status.textContent = "\u5F53\u524D\u670D\u52A1\u5668 \xB7 \u6240\u6709\u9879\u76EE \xB7 \u66F4\u65B0\u4E8E " + time(lastRead);
       }
@@ -280,7 +464,7 @@ function dashboard(ctx, session, cache) {
     }
   }
   function drawQuotas() {
-    if (!alive || index !== 1) return;
+    if (!alive || index !== "quota") return;
     const cards = options().map(([id, name]) => {
       if (id === "mimo") return mimoCard();
       const card = el("section", null, "pq-card"), top = el("div", null, "pq-top");
@@ -293,21 +477,15 @@ function dashboard(ctx, session, cache) {
       }
       card.append(top);
       const entries = history.get(id)?.rows;
-      if (!entries) card.append(el("p", unavailable[id] || "\u5C1A\u672A\u624B\u52A8\u67E5\u8BE2", "pq-muted"));
+      if (!entries) card.append(el("p", unavailable[id] || (busy.has(id) ? "\u6B63\u5728\u67E5\u8BE2\u989D\u5EA6\u2026" : "\u7B49\u5F85\u67E5\u8BE2"), "pq-muted"));
       for (const entry of entries || []) {
-        if (entry.source) card.append(el("small", entry.source + " \xB7 " + entry.host));
         for (const row of entry.values || []) {
-          const reset = row.reset ? row.reset <= Date.now() ? "\u3000\u7A97\u53E3\u5DF2\u5230\u671F\uFF0C\u5F85\u5237\u65B0" : "\u3000\u91CD\u7F6E " + time(row.reset) : "";
-          card.append(
-            el(
-              "div",
-              row.label + "\u3000" + (row.unit === "%" ? "\u5269\u4F59 " : "") + fmt(row.remaining) + (row.unit === "%" ? "%" : " " + row.unit) + reset
-            )
-          );
+          const reset = row.reset ? "\u3000\u91CD\u7F6E " + time(row.reset) : "";
+          card.append(el("div", row.label + "\u3000" + remainingText(row) + reset));
         }
         if (entry.problem) card.append(el("p", entry.problem, "pq-muted"));
         if (entry.select) {
-          const one = btn("\u67E5\u8BE2\u6B64\u8FDE\u63A5", () => refresh(id, entry.source));
+          const one = btn("\u67E5\u8BE2 " + entry.source, () => refresh(id, entry.source));
           one.disabled = busy.has(id);
           card.append(one);
         }
@@ -320,25 +498,27 @@ function dashboard(ctx, session, cache) {
     if (all) all.disabled = busy.size > 0 || !configured.some((r) => !unavailable[r.family]);
   }
   async function refresh(id, source) {
-    if (busy.has(id) || unavailable[id] || !has(id)) return;
+    if (unavailable[id] || !has(id)) return;
     const connection = JSON.stringify(configured.find((r) => r.family === id));
+    if (busy.get(id) === connection) return;
     const valid = () => alive && connection === JSON.stringify(configured.find((r) => r.family === id));
-    busy.add(id);
+    busy.set(id, connection);
     drawQuotas();
     try {
       const rows = await api.refresh(
         { family: id, ...source && { source } },
-        { location, signal: AbortSignal.timeout(15e3) }
+        { location, signal: AbortSignal.any([lifetime.signal, AbortSignal.timeout(15e3)]) }
       );
       if (valid())
         history.set(id, {
           connection,
           rows: source ? [...(history.get(id)?.rows || []).filter((p) => p.source !== source), ...rows] : rows
         });
-    } catch {
-      if (valid()) history.set(id, { connection, rows: [{ problem: "\u989D\u5EA6\u670D\u52A1\u672A\u8FDE\u63A5\uFF0C\u8BF7\u7A0D\u540E\u624B\u52A8\u5237\u65B0" }] });
+    } catch (error) {
+      const problem = error?.name === "TimeoutError" ? "\u672C\u673A\u989D\u5EA6\u67E5\u8BE2\u8D85\u65F6\uFF0C\u8BF7\u7A0D\u540E\u5237\u65B0\u3002" : "\u672C\u673A\u989D\u5EA6\u63D2\u4EF6\u672A\u80FD\u8FD4\u56DE\u7ED3\u679C\uFF0C\u8BF7\u7A0D\u540E\u5237\u65B0\u3002";
+      if (valid()) history.set(id, { connection, rows: [{ problem }] });
     } finally {
-      busy.delete(id);
+      if (busy.get(id) === connection) busy.delete(id);
       drawQuotas();
     }
   }
@@ -350,10 +530,10 @@ function dashboard(ctx, session, cache) {
     clearTimeout(queued);
     queued = void 0;
   }
-  function switchTo(i) {
+  function switchTo(i, refreshAccounts = configured) {
     cancelUsage();
     index = i;
-    buttons.forEach((b, n) => b.setAttribute("aria-pressed", String(i === n)));
+    buttons.forEach((b, n) => b.setAttribute("aria-pressed", String(i === keys[n])));
     controls.replaceChildren();
     content.replaceChildren();
     status.textContent = "";
@@ -361,7 +541,7 @@ function dashboard(ctx, session, cache) {
       status.textContent = discovered ? "\u5F53\u524D\u5DE5\u4F5C\u533A\u5C1A\u672A\u914D\u7F6E\u652F\u6301\u7684\u670D\u52A1\u5546\u3002" : "\u6B63\u5728\u8BFB\u53D6\u5F53\u524D\u670D\u52A1\u5546\u2026";
       return;
     }
-    if (i === 0) {
+    if (i === "usage") {
       controls.append(
         selection(
           "\u7EDF\u8BA1\u65F6\u6BB5",
@@ -375,7 +555,7 @@ function dashboard(ctx, session, cache) {
           (v) => {
             days = Number(v);
             stats = media = lastRead = void 0;
-            switchTo(0);
+            switchTo("usage");
           }
         ),
         selection("\u6A21\u578B\u670D\u52A1\u5546", [["", "\u5168\u90E8\u670D\u52A1\u5546"], ...options()], filter, (v) => {
@@ -387,6 +567,7 @@ function dashboard(ctx, session, cache) {
     } else {
       controls.append(btn("\u5237\u65B0\u5168\u90E8\u989D\u5EA6", () => Promise.all(configured.map((r) => refresh(r.family)))));
       drawQuotas();
+      for (const row of refreshAccounts) void refresh(row.family);
     }
     void readUsage();
     clock = setInterval(readUsage, 6e4);
@@ -422,28 +603,47 @@ function dashboard(ctx, session, cache) {
   });
   (0, import_solid_js.onCleanup)(() => {
     alive = false;
+    lifetime.abort();
     cancelUsage();
     stop?.();
     clearInterval(inventoryClock);
     document.removeEventListener("visibilitychange", visible);
   });
-  switchTo(0);
+  switchTo("quota");
   void discover();
-  return (0, import_solid_js.createComponent)(ctx.ui.Dialog, { title: "\u7528\u91CF\u4E0E\u989D\u5EA6", size: "large", children: root });
+  return (0, import_solid_js.createComponent)(ctx.ui.Dialog, { title: session.location ? "\u7528\u91CF\u4E0E\u989D\u5EA6" : "\u7528\u91CF\u4E0E\u989D\u5EA6 \xB7 \u672C\u673A\u5168\u5C40", size: "large", children: root });
 }
 var plugin_default = import_gui.Plugin.define({
   setup(ctx) {
-    const cache = /* @__PURE__ */ new Map();
     ctx.add(import_gui.Style, style_default);
+    const draft = () => ctx.router.path().split("?")[0] === "/new-session";
+    const localAccount = () => {
+      const server = ctx.servers.list().map((id) => ctx.servers.get(id)).find((server2) => server2?.builtin);
+      if (server) return { server };
+    };
+    const show = (account) => ctx.dialogs.open(() => dashboard(ctx, account));
+    const wallet = (open, global) => {
+      const button = btn(null, open);
+      button.className = "pq-open";
+      button.title = global ? "\u67E5\u770B\u672C\u673A\u5168\u5C40\u989D\u5EA6" : "\u67E5\u770B\u7528\u91CF\u4E0E\u989D\u5EA6";
+      button.setAttribute("aria-label", button.title);
+      return button;
+    };
+    ctx.add(import_gui.Slot, { at: "window.bottom", render() {
+      const dock = el("div", null, "pq-narrow-entry");
+      (0, import_solid_js.createEffect)(() => {
+        const global = draft();
+        dock.className = global ? "pq-draft-entry" : "pq-narrow-entry";
+        const account = global ? localAccount() : ctx.sessions.current();
+        dock.replaceChildren(...account ? [wallet(() => show(account), global)] : []);
+      });
+      return dock;
+    } });
     ctx.add(import_gui.Slot, {
       at: "session.header",
       order: 8,
       render(input) {
-        const button = btn(null, () => ctx.dialogs.open(() => dashboard(ctx, input.session, cache)));
-        button.append((0, import_solid_js.createComponent)(ctx.ui.Icon, { name: "window-analytics", size: "normal" }));
-        button.className = "pq-open";
-        button.title = "\u67E5\u770B\u7528\u91CF\u4E0E\u989D\u5EA6";
-        button.setAttribute("aria-label", button.title);
+        const button = wallet(() => show(input.session), false);
         (0, import_solid_js.createEffect)(() => {
           button.hidden = !input.active;
         });
