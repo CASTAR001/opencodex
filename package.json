@@ -1,0 +1,31 @@
+{
+  "name": "file-review-enhancer",
+  "version": "0.1.0-alpha.1",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./server": "./src/server.js",
+    "./gui-experimental": "./dist/gui-experimental.cjs"
+  },
+  "files": [
+    "dist/",
+    "src/server.js",
+    "skills",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test test/*.test.mjs",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "mdast-util-from-markdown": "^2.1.0",
+    "mdast-util-gfm": "^3.1.0",
+    "mdast-util-math": "^3.0.0",
+    "micromark-extension-gfm": "^3.0.0",
+    "micromark-extension-math": "^3.1.0",
+    "esbuild": "^0.25.12"
+  },
+  "description": "Read-only Markdown documents with footnotes and descriptive links for OpenCode Desktop"
+}
