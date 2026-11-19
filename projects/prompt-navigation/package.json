@@ -1,6 +1,6 @@
 {
   "name": "prompt-navigation",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Compact left-side prompt navigation for OpenCode Desktop",
   "license": "MIT",
   "type": "module",

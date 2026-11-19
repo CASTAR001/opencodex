@@ -21,7 +21,7 @@
 | 07 | [Provider Quota Monitor](projects/provider-quota/README.md) | `0.1.0-alpha.5`，已通过本机验收，从钱包查看剩余额度及用量，新建对话也可打开 |
 | 08 | [File Review Enhancer](projects/file-review-enhancer/README.md) | `0.1.0-alpha.3`，从右侧文件树阅读 Markdown，支持脚注往返、原生网站图标和短链接名称 |
 | 09 | [Bilingual Fonts](projects/bilingual-fonts/README.md) | `0.1.0-alpha.1`，已通过 macOS 本机验收。界面正文和代码可分别设置中西文字体 |
-| 10 | [Prompt Navigation](projects/prompt-navigation/README.md) | `0.1.0-alpha.1`，点击会话左缘的短刻度跳转到提示词，悬停可预览和标星 |
+| 10 | [Prompt Navigation](projects/prompt-navigation/README.md) | `0.1.0-alpha.2`，点击会话左缘刻度跳回提示词，悬停可预览和标星。正文左侧空间不足时自动收起 |
 
 在 macOS 安装快捷导航时，将 `projects/prompt-navigation/` 下的 `package.json` 和 `gui-experimental.cjs` 放入 `~/.config/opencode/plugins/prompt-navigation/`。OpenCode Desktop 会在加载插件时自动发现它。
 

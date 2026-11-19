@@ -8,6 +8,7 @@
   font:inherit; color:var(--pn-ink); -webkit-app-region:no-drag;
 }
 .ocx-prompt-nav[hidden], .ocx-prompt-nav [hidden] { display:none !important; }
+.ocx-prompt-nav[inert] { visibility:hidden; }
 .ocx-prompt-nav * { box-sizing:border-box; }
 .ocx-prompt-nav .pn-ticks {
   margin:0; padding:0; list-style:none; overflow-y:auto; overflow-x:hidden; min-height:0;

@@ -6,6 +6,7 @@ function el(tag, cls) {
 
 export function createRail({ href, jump, star, retry }) {
   const nav = el('nav','ocx-prompt-nav')
+  nav.inert = true
   nav.setAttribute('aria-label','提示词导航')
   const list = el('ol','pn-ticks')
   list.setAttribute('aria-label','当前会话的提示词')
@@ -146,6 +147,40 @@ export function createRail({ href, jump, star, retry }) {
     nav.style.setProperty('--pn-step', Math.max(8, Math.min(10, nav.clientHeight / (order.length || 1)))+'px')
     position()
   }
+  // The panel can shrink with the window held still. Track a native transcript
+  // column and its containing block, including while the virtualizer holds its width.
+  function observeGutter(panel, content, findColumn) {
+    let column, container
+    const resize = new ResizeObserver(measure)
+    const waiting = new MutationObserver(measure)
+    function measure() {
+      const next = column?.isConnected && column.getClientRects().length ? column : findColumn()
+      if (next !== column) {
+        if (column) resize.unobserve(column)
+        if (container) resize.unobserve(container)
+        column = next
+        container = column?.parentElement
+        if (column) {
+          resize.observe(column)
+          if (container) resize.observe(container)
+        }
+      }
+      if (column) waiting.disconnect()
+      else waiting.observe(content,{childList:true,subtree:true})
+      const room = column?.getBoundingClientRect()
+      const track = nav.getBoundingClientRect()
+      const hide = !room?.width || !track.width || track.right + 8 > room.left
+      if (nav.inert !== hide) {
+        nav.inert = hide
+        if (hide) close()
+      }
+      size()
+    }
+    resize.observe(panel)
+    resize.observe(nav)
+    measure()
+    return () => { resize.disconnect(); waiting.disconnect() }
+  }
   function update(items,saved,status) {
     stars = new Set(saved)
     order = items
@@ -176,5 +211,5 @@ export function createRail({ href, jump, star, retry }) {
     else close()
     size()
   }
-  return {nav,list,size,update,current,close,dispose() { clearTimeout(idle) }}
+  return {nav,list,observeGutter,update,current,close,dispose() { clearTimeout(idle) }}
 }

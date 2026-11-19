@@ -76,10 +76,8 @@ function mount(ctx, session, marker) {
     },
   })
   host.append(rail.nav)
-  function size() { rail.size(host.clientWidth) }
-  size()
-  const resize = new ResizeObserver(size)
-  resize.observe(host)
+  const stopGutter = rail.observeGutter(host,frame,() =>
+    frame.querySelector('[data-timeline-virtual-content] [data-timeline-row][data-message-id]'))
   function sample() {
     sampleFrame = 0
     const viewport = marker.closest('[data-scrollable]') ||
@@ -121,7 +119,7 @@ function mount(ctx, session, marker) {
     cancelAnimationFrame(sampleFrame)
     seeking?.abort()
     cancelAnimationFrame(repeatFrame)
-    resize.disconnect()
+    stopGutter()
     frame.removeEventListener('scroll',scrolling,true)
     host.removeEventListener('pointerdown',outside)
     rail.dispose()
