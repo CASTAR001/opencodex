@@ -107,6 +107,7 @@
 .pq-top {
   justify-content: space-between;
 }
+.pq-card > h3:first-child { margin-block-start: 0; }
 .pq-top h3 {
   margin: 0;
 }
@@ -130,16 +131,23 @@
 .pq-open:focus-visible {
   outline: 2px solid var(--border-focus);
 }
-/* Use one wallet glyph on the session button and the host's icon-only draft pill. */
-.pq-open, [data-slot="titlebar-update"] button[aria-label="查看本机全局额度"] {
+.pq-open {
   --pq-wallet: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 7V4.5a1 1 0 0 0-1.2-1L4.7 5.6A2 2 0 0 0 3 7.6V15a1.5 1.5 0 0 0 1.5 1.5H16a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H5'/%3E%3Cpath d='M17 10h-3a1.6 1.6 0 0 0 0 3.2h3'/%3E%3C/svg%3E");
 }
 .pq-open { flex: 0 0 28px; -webkit-app-region: no-drag; }
-.pq-open::before, [data-slot="titlebar-update"] button[aria-label="查看本机全局额度"] span:has(> svg)::before {
+.pq-open::before {
   content: ''; display: inline-block; width: 18px; height: 18px;
   background: currentColor; mask: var(--pq-wallet) center / contain no-repeat;
 }
-[data-slot="titlebar-update"] button[aria-label="查看本机全局额度"] span:has(> svg) > svg { display: none; }
+/* Anchor inside the draft so the button clears both native title bars and sidebars. */
+[data-component="new-session"] { anchor-name: --pq-draft; }
+.pq-draft-entry:not(:empty) {
+  position: fixed;
+  position-anchor: --pq-draft;
+  top: calc(anchor(top, 40px) + 10px);
+  right: calc(anchor(right, 0px) + 12px);
+  z-index: 2;
+}
 
 .pq-narrow-entry { display: none; }
 @media (max-width: 767px) {
@@ -150,6 +158,5 @@
     padding-inline: 8px;
     order: 9999;
   }
-  .session-header-actions .pq-open,
-  [data-slot="titlebar-update"]:has(button[aria-label="查看本机全局额度"]) { display: none; }
+  .session-header-actions .pq-open { display: none; }
 }

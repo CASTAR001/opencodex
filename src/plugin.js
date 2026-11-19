@@ -1,4 +1,4 @@
-import { Plugin, Slot, Style, TitlebarItem } from '@opencode/plugin/gui'
+import { Plugin, Slot, Style } from '@opencode/plugin/gui'
 import { createComponent, createEffect, onCleanup } from 'solid-js'
 import { families, contract, unavailable } from './contract.js'
 import css from './style.css'
@@ -6,6 +6,23 @@ import css from './style.css'
 const number = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 })
 const fmt = (n) => (Number.isFinite(n) ? number.format(n) : '—')
 const quotaNumber = new Intl.NumberFormat('zh-CN', { maximumSignificantDigits: 21 })
+// Format on display only. A supplied remaining percentage takes precedence over counters.
+function remainingText(row) {
+  if (row.unit && row.unit !== '%') {
+    return row.remaining != null ? quotaNumber.format(row.remaining) + ' ' + row.unit : '未返回余额'
+  }
+  let percent
+  if (row.unit === '%' && row.remaining != null) percent = row.remaining
+  else if (row.unit === '%' && row.used != null) percent = 100 - row.used
+  else if (row.total > 0) {
+    // With no explicit percentage, the MiniMax CLI treats its legacy count as remaining.
+    const left = row.remaining ?? row.count ?? (row.used != null ? row.total - row.used : undefined)
+    if (left != null) percent = left / row.total * 100
+  }
+  if (percent != null) return '剩余 ' + fmt(percent) + '%'
+  if (row.remaining != null) return '剩余 ' + quotaNumber.format(row.remaining)
+  return row.state ?? '未返回剩余比例'
+}
 const time = (t) =>
   new Date(t).toLocaleString('zh-CN', {
     month: 'numeric',
@@ -141,16 +158,19 @@ function dashboard(ctx, session) {
   const options = () => configured.map((row) => [row.family, families[row.family]])
   function mimoCard() {
     const card = el('section', null, 'pq-card')
-    card.append(el('h3', '小米 MiMo · Standard'), el('small', '¥99/月 · 110 亿 Credits · 本机估算'))
+    const quota = index === 'quota'
+    const caption = quota ? '仅扣除所列时段用量后的月额度占比' : '所列时段用量占月额度的比例'
+    card.append(el('h3', '小米 MiMo · Standard'), el('small', '¥99/月 · 110 亿 Credits · 本机估算 · ' + caption))
     for (const [key, label] of [
       ['today', '今天'],
       ['week', '近 7 天'],
     ]) {
       const reading = mimo?.[key]
       const n = reading?.percent
-      const value = Number.isFinite(n) ? (n > 0 && n < 0.01 ? '<0.01%' : fmt(n) + '%') : '—'
+      const display = quota ? 100 - n : n
+      const value = Number.isFinite(n) ? (display > 0 && display < 0.01 ? '<0.01%' : fmt(display) + '%') : '—'
       card.append(
-        el('div', label + '　' + value + (reading?.partial ? '（部分记录缺少可换算用量）' : '')),
+        el('div', label + (quota ? '　剩余 ' : '　') + value + (reading?.partial ? '（部分记录缺少可换算用量）' : '')),
       )
     }
     if (mimo?.problem) card.append(el('small', mimo.problem))
@@ -256,14 +276,7 @@ function dashboard(ctx, session) {
       for (const entry of entries || []) {
         for (const row of entry.values || []) {
           const reset = row.reset ? '　重置 ' + time(row.reset) : ''
-          const amounts = []
-          const unit = row.unit === '%' ? '%' : row.unit ? ' ' + row.unit : ''
-          const fraction = row.total != null ? ' / ' + quotaNumber.format(row.total) : ''
-          if (row.remaining != null) amounts.push((unit === '%' || !unit ? '剩余 ' : '') + quotaNumber.format(row.remaining) + unit + (!unit ? fraction : ''))
-          if (row.used != null) amounts.push('已用 ' + quotaNumber.format(row.used) + unit + fraction)
-          if (row.count != null) amounts.push('计数 ' + quotaNumber.format(row.count) + fraction)
-          if (row.state) amounts.push(row.state)
-          card.append(el('div', row.label + '　' + amounts.join('　') + reset))
+          card.append(el('div', row.label + '　' + remainingText(row) + reset))
         }
         if (entry.problem) card.append(el('p', entry.problem, 'pq-muted'))
         if (entry.select) {
@@ -298,8 +311,9 @@ function dashboard(ctx, session) {
             ? [...(history.get(id)?.rows || []).filter((p) => p.source !== source), ...rows]
             : rows,
         })
-    } catch {
-      if (valid()) history.set(id, { connection, rows: [{ problem: '额度服务未连接，请稍后手动刷新' }] })
+    } catch (error) {
+      const problem = error?.name === 'TimeoutError' ? '本机额度查询超时，请稍后刷新。' : '本机额度插件未能返回结果，请稍后刷新。'
+      if (valid()) history.set(id, { connection, rows: [{ problem }] })
     } finally {
       if (busy.get(id) === connection) busy.delete(id)
       drawQuotas()
@@ -418,18 +432,12 @@ export default Plugin.define({
       button.setAttribute('aria-label', button.title)
       return button
     }
-    // The draft's public route has no project location.
-    ctx.add(TitlebarItem, () => {
-      if (!draft()) return
-      const account = localAccount()
-      if (account) return { id: 'draft-quota', icon: 'providers', label: '剩余额度',
-        title: '查看本机全局额度', run: () => show(account) }
-    })
-    // The narrow shell replaces the timeline header with native mobile navigation.
+    // The window slot stays mounted when vertical tabs or their sidebar are hidden.
     ctx.add(Slot, { at: 'window.bottom', render() {
       const dock = el('div', null, 'pq-narrow-entry')
       createEffect(() => {
         const global = draft()
+        dock.className = global ? 'pq-draft-entry' : 'pq-narrow-entry'
         const account = global ? localAccount() : ctx.sessions.current()
         dock.replaceChildren(...(account ? [wallet(() => show(account), global)] : []))
       })

@@ -62,7 +62,10 @@ export function quotaService(ctx, mcpAccounts, request = fetch, clock = Date.now
           }
           return { at, problem: reasons[res.status] || '额度接口返回 HTTP ' + res.status }
         }
-        const values = parseQuota(route, await res.json(), at)
+        const values = parseQuota(route, await res.json(), at).map(row =>
+          // OpenCode validates the result before JSON serialization, including optional fields.
+          Object.fromEntries(Object.entries(row).filter(([, value]) => value !== undefined)),
+        )
         return values.length ? { at, values } : { at, problem: '接口未返回余额或套餐窗口' }
       } catch {
         return { at, problem: '额度查询未完成，请稍后手动重试' }

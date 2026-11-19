@@ -183,6 +183,7 @@ var style_default = `.pq-page {
 .pq-top {
   justify-content: space-between;
 }
+.pq-card > h3:first-child { margin-block-start: 0; }
 .pq-top h3 {
   margin: 0;
 }
@@ -206,16 +207,23 @@ var style_default = `.pq-page {
 .pq-open:focus-visible {
   outline: 2px solid var(--border-focus);
 }
-/* Use one wallet glyph on the session button and the host's icon-only draft pill. */
-.pq-open, [data-slot="titlebar-update"] button[aria-label="\u67E5\u770B\u672C\u673A\u5168\u5C40\u989D\u5EA6"] {
+.pq-open {
   --pq-wallet: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 7V4.5a1 1 0 0 0-1.2-1L4.7 5.6A2 2 0 0 0 3 7.6V15a1.5 1.5 0 0 0 1.5 1.5H16a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1H5'/%3E%3Cpath d='M17 10h-3a1.6 1.6 0 0 0 0 3.2h3'/%3E%3C/svg%3E");
 }
 .pq-open { flex: 0 0 28px; -webkit-app-region: no-drag; }
-.pq-open::before, [data-slot="titlebar-update"] button[aria-label="\u67E5\u770B\u672C\u673A\u5168\u5C40\u989D\u5EA6"] span:has(> svg)::before {
+.pq-open::before {
   content: ''; display: inline-block; width: 18px; height: 18px;
   background: currentColor; mask: var(--pq-wallet) center / contain no-repeat;
 }
-[data-slot="titlebar-update"] button[aria-label="\u67E5\u770B\u672C\u673A\u5168\u5C40\u989D\u5EA6"] span:has(> svg) > svg { display: none; }
+/* Anchor inside the draft so the button clears both native title bars and sidebars. */
+[data-component="new-session"] { anchor-name: --pq-draft; }
+.pq-draft-entry:not(:empty) {
+  position: fixed;
+  position-anchor: --pq-draft;
+  top: calc(anchor(top, 40px) + 10px);
+  right: calc(anchor(right, 0px) + 12px);
+  z-index: 2;
+}
 
 .pq-narrow-entry { display: none; }
 @media (max-width: 767px) {
@@ -226,8 +234,7 @@ var style_default = `.pq-page {
     padding-inline: 8px;
     order: 9999;
   }
-  .session-header-actions .pq-open,
-  [data-slot="titlebar-update"]:has(button[aria-label="\u67E5\u770B\u672C\u673A\u5168\u5C40\u989D\u5EA6"]) { display: none; }
+  .session-header-actions .pq-open { display: none; }
 }
 `;
 
@@ -235,6 +242,21 @@ var style_default = `.pq-page {
 var number = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 2 });
 var fmt = (n) => Number.isFinite(n) ? number.format(n) : "\u2014";
 var quotaNumber = new Intl.NumberFormat("zh-CN", { maximumSignificantDigits: 21 });
+function remainingText(row) {
+  if (row.unit && row.unit !== "%") {
+    return row.remaining != null ? quotaNumber.format(row.remaining) + " " + row.unit : "\u672A\u8FD4\u56DE\u4F59\u989D";
+  }
+  let percent;
+  if (row.unit === "%" && row.remaining != null) percent = row.remaining;
+  else if (row.unit === "%" && row.used != null) percent = 100 - row.used;
+  else if (row.total > 0) {
+    const left = row.remaining ?? row.count ?? (row.used != null ? row.total - row.used : void 0);
+    if (left != null) percent = left / row.total * 100;
+  }
+  if (percent != null) return "\u5269\u4F59 " + fmt(percent) + "%";
+  if (row.remaining != null) return "\u5269\u4F59 " + quotaNumber.format(row.remaining);
+  return row.state ?? "\u672A\u8FD4\u56DE\u5269\u4F59\u6BD4\u4F8B";
+}
 var time = (t) => new Date(t).toLocaleString("zh-CN", {
   month: "numeric",
   day: "numeric",
@@ -347,16 +369,19 @@ function dashboard(ctx, session) {
   const options = () => configured.map((row) => [row.family, families[row.family]]);
   function mimoCard() {
     const card = el("section", null, "pq-card");
-    card.append(el("h3", "\u5C0F\u7C73 MiMo \xB7 Standard"), el("small", "\xA599/\u6708 \xB7 110 \u4EBF Credits \xB7 \u672C\u673A\u4F30\u7B97"));
+    const quota = index === "quota";
+    const caption = quota ? "\u4EC5\u6263\u9664\u6240\u5217\u65F6\u6BB5\u7528\u91CF\u540E\u7684\u6708\u989D\u5EA6\u5360\u6BD4" : "\u6240\u5217\u65F6\u6BB5\u7528\u91CF\u5360\u6708\u989D\u5EA6\u7684\u6BD4\u4F8B";
+    card.append(el("h3", "\u5C0F\u7C73 MiMo \xB7 Standard"), el("small", "\xA599/\u6708 \xB7 110 \u4EBF Credits \xB7 \u672C\u673A\u4F30\u7B97 \xB7 " + caption));
     for (const [key, label] of [
       ["today", "\u4ECA\u5929"],
       ["week", "\u8FD1 7 \u5929"]
     ]) {
       const reading = mimo?.[key];
       const n = reading?.percent;
-      const value = Number.isFinite(n) ? n > 0 && n < 0.01 ? "<0.01%" : fmt(n) + "%" : "\u2014";
+      const display = quota ? 100 - n : n;
+      const value = Number.isFinite(n) ? display > 0 && display < 0.01 ? "<0.01%" : fmt(display) + "%" : "\u2014";
       card.append(
-        el("div", label + "\u3000" + value + (reading?.partial ? "\uFF08\u90E8\u5206\u8BB0\u5F55\u7F3A\u5C11\u53EF\u6362\u7B97\u7528\u91CF\uFF09" : ""))
+        el("div", label + (quota ? "\u3000\u5269\u4F59 " : "\u3000") + value + (reading?.partial ? "\uFF08\u90E8\u5206\u8BB0\u5F55\u7F3A\u5C11\u53EF\u6362\u7B97\u7528\u91CF\uFF09" : ""))
       );
     }
     if (mimo?.problem) card.append(el("small", mimo.problem));
@@ -456,14 +481,7 @@ function dashboard(ctx, session) {
       for (const entry of entries || []) {
         for (const row of entry.values || []) {
           const reset = row.reset ? "\u3000\u91CD\u7F6E " + time(row.reset) : "";
-          const amounts = [];
-          const unit = row.unit === "%" ? "%" : row.unit ? " " + row.unit : "";
-          const fraction = row.total != null ? " / " + quotaNumber.format(row.total) : "";
-          if (row.remaining != null) amounts.push((unit === "%" || !unit ? "\u5269\u4F59 " : "") + quotaNumber.format(row.remaining) + unit + (!unit ? fraction : ""));
-          if (row.used != null) amounts.push("\u5DF2\u7528 " + quotaNumber.format(row.used) + unit + fraction);
-          if (row.count != null) amounts.push("\u8BA1\u6570 " + quotaNumber.format(row.count) + fraction);
-          if (row.state) amounts.push(row.state);
-          card.append(el("div", row.label + "\u3000" + amounts.join("\u3000") + reset));
+          card.append(el("div", row.label + "\u3000" + remainingText(row) + reset));
         }
         if (entry.problem) card.append(el("p", entry.problem, "pq-muted"));
         if (entry.select) {
@@ -496,8 +514,9 @@ function dashboard(ctx, session) {
           connection,
           rows: source ? [...(history.get(id)?.rows || []).filter((p) => p.source !== source), ...rows] : rows
         });
-    } catch {
-      if (valid()) history.set(id, { connection, rows: [{ problem: "\u989D\u5EA6\u670D\u52A1\u672A\u8FDE\u63A5\uFF0C\u8BF7\u7A0D\u540E\u624B\u52A8\u5237\u65B0" }] });
+    } catch (error) {
+      const problem = error?.name === "TimeoutError" ? "\u672C\u673A\u989D\u5EA6\u67E5\u8BE2\u8D85\u65F6\uFF0C\u8BF7\u7A0D\u540E\u5237\u65B0\u3002" : "\u672C\u673A\u989D\u5EA6\u63D2\u4EF6\u672A\u80FD\u8FD4\u56DE\u7ED3\u679C\uFF0C\u8BF7\u7A0D\u540E\u5237\u65B0\u3002";
+      if (valid()) history.set(id, { connection, rows: [{ problem }] });
     } finally {
       if (busy.get(id) === connection) busy.delete(id);
       drawQuotas();
@@ -610,21 +629,11 @@ var plugin_default = import_gui.Plugin.define({
       button.setAttribute("aria-label", button.title);
       return button;
     };
-    ctx.add(import_gui.TitlebarItem, () => {
-      if (!draft()) return;
-      const account = localAccount();
-      if (account) return {
-        id: "draft-quota",
-        icon: "providers",
-        label: "\u5269\u4F59\u989D\u5EA6",
-        title: "\u67E5\u770B\u672C\u673A\u5168\u5C40\u989D\u5EA6",
-        run: () => show(account)
-      };
-    });
     ctx.add(import_gui.Slot, { at: "window.bottom", render() {
       const dock = el("div", null, "pq-narrow-entry");
       (0, import_solid_js.createEffect)(() => {
         const global = draft();
+        dock.className = global ? "pq-draft-entry" : "pq-narrow-entry";
         const account = global ? localAccount() : ctx.sessions.current();
         dock.replaceChildren(...account ? [wallet(() => show(account), global)] : []);
       });
