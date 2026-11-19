@@ -12,7 +12,10 @@
 
   --ocx-head-height: 34px;
   --ocx-sticky-top: var(--sticky-accordion-top, 0px);
-  --ocx-number-width: calc(16px + var(--ocx-number-digits, 2) * 1ch + 12px);
+  --ocx-button-size: 24px;
+  --ocx-button-gap: 6px;
+  --ocx-number-gap: 18px;
+  --ocx-number-width: calc(16px + var(--ocx-number-digits, 2) * 1ch + var(--ocx-number-gap));
   isolation: isolate;
   overflow: visible;
 
@@ -36,8 +39,14 @@
     pointer-events: none;
   }
   & [data-ocx-code-header] { grid-column: 1; }
-  > [data-slot="markdown-code-actions"] { grid-column: 2; }
-  > [data-slot="markdown-copy-button"] { grid-column: 3; margin-inline: 2px 10px; }
+  > [data-slot="markdown-code-actions"] { grid-column: 2; gap: var(--ocx-button-gap); }
+  > [data-slot="markdown-code-actions"]:not(:empty) { margin-inline-start: var(--ocx-button-gap); }
+  > [data-slot="markdown-copy-button"] > * { display: flex; align-items: center; }
+  > [data-slot="markdown-copy-button"] button {
+    box-sizing: border-box; width: var(--ocx-button-size); height: var(--ocx-button-size);
+    display: grid; place-items: center; padding: 0;
+  }
+  > [data-slot="markdown-copy-button"] { grid-column: 3; margin-inline: var(--ocx-button-gap) 10px; }
   > :is([data-slot="markdown-copy-button"], [data-slot="markdown-code-actions"]) {
     inset-inline-end: auto;
     display: flex;
@@ -46,7 +55,7 @@
     opacity: 1;
     justify-self: end;
   }
-  > pre, & [data-ocx-code-gutter] {
+  > pre, & [data-ocx-code-gutter], & [data-ocx-diff-bands] {
     grid-area: 1 / 1 / 2 / -1;
     margin: var(--ocx-head-height) 0 0;
   }
@@ -108,10 +117,24 @@
   }
   & [data-ocx-code-gutter][hidden] { display:none; }
   & [data-ocx-code-gutter] i {
-    position: absolute; right: 12px; transform: translateY(-50%);
+    position: absolute; right: var(--ocx-number-gap); transform: translateY(-50%);
     font-style: normal; line-height: 1;
   }
   & [data-ocx-code-gutter] i::before { content: attr(data-line); }
+
+  & [data-ocx-diff-bands] {
+    position: relative; z-index: -1; align-self: stretch; overflow: clip;
+    border-radius: 0 0 7px 7px; pointer-events: none;
+  }
+  & [data-ocx-diff-bands][hidden] { display: none; }
+  & [data-ocx-diff-bands] i { position: absolute; inset-inline: 0; }
+  & [data-change="add"] { background: var(--surface-diff-add-base, var(--v2-state-bg-success)); }
+  & [data-change="delete"] { background: var(--surface-diff-delete-base, var(--v2-state-bg-danger)); }
+  &:has([data-ocx-toggle="diff"][aria-pressed="true"]) > pre { background: transparent; }
+  &:has([data-ocx-toggle="diff"]:enabled[aria-pressed="false"]) > pre code {
+    color: var(--text-base);
+    & span { color: inherit !important; }
+  }
 
   /* Desktop flattens Shell spans with an important color. Restore the role
      emitted by its tokenizer through the variable that rule already reads. */
@@ -135,10 +158,10 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: var(--ocx-button-gap);
   min-width: 0;
   min-height: 34px;
-  padding-inline: 16px 2px;
+  padding-inline: 16px 0;
   color: var(--v2-text-text-muted);
   font-size: 12px;
   user-select: none;
@@ -148,8 +171,9 @@
     flex: none;
     display: grid;
     place-items: center;
-    width: 24px;
-    height: 24px;
+    box-sizing: border-box;
+    width: var(--ocx-button-size);
+    height: var(--ocx-button-size);
     padding: 0;
     border-radius: 4px;
     color: inherit;
@@ -164,8 +188,9 @@
     stroke-linecap: round;
     stroke-linejoin: round;
   }
-  > button:hover { background: var(--v2-overlay-simple-overlay-hover); }
+  > button:disabled { opacity: .35; cursor: default; }
+  > button:enabled:hover { background: var(--v2-overlay-simple-overlay-hover); }
   > button:focus-visible { outline: 2px solid var(--v2-border-border-focus); outline-offset: 1px; }
 }
 
-[data-ocx-code-header] [data-ocx-toggle="numbers"][aria-pressed="true"] { color: var(--v2-text-text-strong); background: var(--v2-overlay-simple-overlay-hover); }
+[data-ocx-code-header] :is([data-ocx-toggle="diff"],[data-ocx-toggle="numbers"])[aria-pressed="true"] { color: var(--v2-text-text-strong); background: var(--v2-overlay-simple-overlay-hover); }
