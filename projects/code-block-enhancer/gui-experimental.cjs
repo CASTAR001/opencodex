@@ -4,18 +4,60 @@ const { createComponent, createEffect, createSignal, onMount } = require('solid-
 const { insert } = require('solid-js/web')
 const styles = "/* Only take over layout after the renderer finds the host's original pre and Copy. */\n[data-component=\"markdown\"] [data-component=\"markdown-code\"]:has(> [data-slot=\"markdown-code-content\"] [data-ocx-code-header]) {\n  display: grid;\n  grid-template-columns: minmax(0, 1fr) auto auto;\n  align-items: center;\n  min-width: 0;\n  margin-block: 12px 24px;\n  padding-block-start: 4px;\n  border: 0.5px solid var(--v2-border-border-muted);\n  border-radius: 8px;\n  background: var(--v2-background-bg-layer-01);\n\n  > [data-slot=\"markdown-code-content\"] { grid-area: 1 / 1; min-width: 0; margin: 0; }\n  > [data-slot=\"markdown-code-actions\"] { grid-area: 1 / 2; }\n  > [data-slot=\"markdown-copy-button\"] { grid-area: 1 / 3; margin-inline: 2px 10px; }\n  > :is([data-slot=\"markdown-copy-button\"], [data-slot=\"markdown-code-actions\"]) {\n    position: static;\n    opacity: 1;\n    justify-self: end;\n  }\n  > pre {\n    display: block;\n    grid-area: 2 / 1 / 3 / -1;\n    min-width: 0;\n    margin: 0;\n    padding: 8px 16px 16px;\n    border: 0;\n    border-top: 0.5px solid transparent;\n    border-radius: 0 0 8px 8px;\n    white-space: pre;\n    overflow-x: auto;\n  }\n  &:has([data-ocx-code-header] button[aria-pressed=\"true\"]) > pre {\n    white-space: pre-wrap;\n    overflow-wrap: anywhere;\n    & code, & code span { white-space: inherit; }\n  }\n\n  /* Desktop flattens Shell spans with an important color. Restore the role\n     emitted by its tokenizer through the variable that rule already reads. */\n  &[data-code-kind=\"shell\"] > pre code {\n    span[style*=\"var(--syntax-keyword)\"] { --markdown-shell-code-token-color: var(--syntax-keyword); }\n    span[style*=\"var(--syntax-primitive)\"] { --markdown-shell-code-token-color: var(--syntax-primitive); }\n    span[style*=\"var(--syntax-string)\"] { --markdown-shell-code-token-color: var(--syntax-string); }\n    span[style*=\"var(--syntax-type)\"] { --markdown-shell-code-token-color: var(--syntax-type); }\n    span[style*=\"var(--syntax-constant)\"] { --markdown-shell-code-token-color: var(--syntax-constant); }\n    span[style*=\"var(--syntax-comment)\"] { --markdown-shell-code-token-color: var(--syntax-comment); }\n    span[style*=\"var(--syntax-variable)\"] { --markdown-shell-code-token-color: var(--syntax-variable); }\n    span[style*=\"var(--syntax-operator)\"] { --markdown-shell-code-token-color: var(--syntax-operator); }\n    span[style*=\"var(--syntax-punctuation)\"] { --markdown-shell-code-token-color: var(--syntax-punctuation); }\n    span[style*=\"var(--syntax-property)\"] { --markdown-shell-code-token-color: var(--syntax-property); }\n    span[style*=\"var(--syntax-regexp)\"] { --markdown-shell-code-token-color: var(--syntax-regexp); }\n    span[style*=\"var(--syntax-info)\"] { --markdown-shell-code-token-color: var(--syntax-info); }\n  }\n}\n\n[data-ocx-code-header] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 6px;\n  min-width: 0;\n  min-height: 34px;\n  padding-inline: 16px 2px;\n  color: var(--v2-text-text-muted);\n  font-size: 12px;\n  user-select: none;\n\n  > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 550; }\n  > button {\n    flex: none;\n    display: grid;\n    place-items: center;\n    width: 24px;\n    height: 24px;\n    padding: 0;\n    border-radius: 4px;\n    color: inherit;\n    cursor: pointer;\n  }\n  > button svg {\n    width: 16px;\n    height: 16px;\n    fill: none;\n    stroke: currentColor;\n    stroke-width: 1.4;\n    stroke-linecap: round;\n    stroke-linejoin: round;\n  }\n  > button:hover { background: var(--v2-overlay-simple-overlay-hover); }\n  > button:focus-visible { outline: 2px solid var(--v2-border-border-focus); outline-offset: 1px; }\n}\n"
 
-const labels = {
-  '': 'Text', text: 'Text',
-  ts: 'TypeScript', typescript: 'TypeScript', tsx: 'TSX',
-  js: 'JavaScript', javascript: 'JavaScript', jsx: 'JSX',
-  py: 'Python', python: 'Python',
-  sh: 'Shell', shell: 'Shell', bash: 'Bash', zsh: 'Zsh',
+// The GUI matches literal fence tags. These groups cover Desktop 2.3.2's bundled
+// @pierre/highlights languages and our existing Markdown/plain-text aliases.
+const aliases = {
+  Text: ['', 'text', 'txt', 'plain', 'plaintext'],
+  Markdown: ['markdown', 'md', 'mdown', 'mkd', 'commonmark', 'gfm'],
+  'Angular HTML': ['angular-html'],
+  'Angular TypeScript': ['angular-ts'],
+  Assembly: ['asm', 'assembly', 's'],
+  Astro: ['astro'],
+  Bash: ['bash'], Zsh: ['zsh'], Shell: ['sh', 'shell', 'shellscript', 'shellsession'],
+  Batch: ['bat', 'batch', 'batchfile', 'cmd', 'dos'],
+  C: ['c', 'h'], C3: ['c3'],
+  'C++': ['c++', 'cc', 'cpp', 'cxx', 'hh', 'hpp', 'hxx'],
+  'C#': ['c#', 'cs', 'csharp'],
+  Clojure: ['clj', 'cljc', 'cljs', 'clojure'], EDN: ['edn'],
+  CMake: ['cmake'], CSS: ['css'], CUDA: ['cu', 'cuda', 'cuh'],
+  Dart: ['dart'], Diff: ['diff', 'patch'],
+  'Git commit': ['git-commit'], 'Git rebase': ['git-rebase'],
+  Dockerfile: ['docker', 'dockerfile'], Containerfile: ['containerfile'],
+  Elixir: ['ex', 'exs', 'elixir'], Elm: ['elm'], Erlang: ['erl', 'erlang', 'hrl'],
+  Fortran: ['f', 'f03', 'f08', 'f77', 'f90', 'f95', 'for', 'fortran', 'fortran-free-form', 'fortran-fixed-form'],
+  'F#': ['f#', 'fs', 'fsharp', 'fsi', 'fsx'],
+  'Godot resource': ['gdresource', 'godot-resource', 'tres', 'tscn'], GDScript: ['gd', 'gdscript'],
+  'Godot shader': ['gdshader', 'gdshaderinc', 'godot-shader'],
+  Gleam: ['gleam'], GLSL: ['comp', 'frag', 'geom', 'glsl', 'vert'],
+  Go: ['go', 'golang'], GraphQL: ['gql', 'graphql'], Gradle: ['gradle'],
+  Groovy: ['groovy', 'gsh', 'gvy', 'gy'], Haskell: ['haskell', 'hs'], HLSL: ['hlsl'],
+  HTML: ['htm', 'html'], Java: ['java'], JavaScript: ['cjs', 'javascript', 'js', 'mjs'],
+  JSON: ['json'], JSONC: ['jsonc'], JSON5: ['json5'], 'JSON Lines': ['jsonl'], JSX: ['jsx'],
+  Julia: ['jl', 'julia'], Kotlin: ['kotlin', 'kt', 'kts'], LaTeX: ['latex', 'tex'], Less: ['less'],
+  Lisp: ['lisp', 'lsp'], 'Common Lisp': ['cl'], 'Emacs Lisp': ['el', 'elisp', 'emacs-lisp'], Scheme: ['scheme', 'scm'],
+  Lua: ['lua'], Makefile: ['make', 'makefile', 'mk'], MATLAB: ['matlab'], Octave: ['octave'],
+  MDX: ['mdx'], Nim: ['nim'], Nix: ['nix'],
+  'Objective-C': ['m', 'objc', 'objective-c', 'objectivec'], 'Objective-C++': ['mm', 'objcpp', 'objective-cpp'],
+  OCaml: ['ml', 'mli', 'ocaml'], Pascal: ['dpk', 'dpr', 'lpr', 'object-pascal', 'objectpascal', 'pas', 'pascal', 'pp'],
+  Delphi: ['delphi'], Perl: ['perl', 'pl', 'pm'], PHP: ['php'],
+  PowerShell: ['powershell', 'ps', 'ps1', 'psd1', 'psm1', 'pwsh'],
+  Protobuf: ['proto', 'protobuf'], Python: ['py', 'python'], R: ['r', 'rscript'],
+  Ruby: ['rb', 'ruby'], Rust: ['rs', 'rust'], Sass: ['sass'], Scala: ['sc', 'scala'], sbt: ['sbt'],
+  SCSS: ['scss'], Solidity: ['sol', 'solidity'], SQL: ['sql'], Svelte: ['svelte'], Swift: ['swift'],
+  HCL: ['hcl'], Terraform: ['terraform', 'tf', 'tfvars'], TOML: ['toml'],
+  TypeScript: ['cts', 'mts', 'ts', 'typescript'], TSRX: ['tsrx'], TSX: ['tsx'],
+  Vue: ['vue'], WebAssembly: ['wasm', 'wat'], WGSL: ['wgsl'],
+  SVG: ['svg'], XML: ['xml', 'xsd'], YAML: ['yaml', 'yml'], Zig: ['zig'], ZON: ['zon'],
+}
+const labels = new Map()
+for (const [label, tags] of Object.entries(aliases)) {
+  for (const tag of tags) labels.set(tag, label)
 }
 
 function toolbar(ctx, block) {
   const header = document.createElement('div')
   const language = document.createElement('span')
-  language.textContent = labels[block.language]
+  language.textContent = labels.get(block.language)
   const wrap = document.createElement('button')
   wrap.type = 'button'
   const [wrapped, setWrapped] = createSignal(true)
@@ -61,6 +103,6 @@ exports.default = Plugin.define({
   },
   setup(ctx) {
     ctx.add(Style, styles)
-    ctx.add(CodeBlock, { languages: Object.keys(labels), render: block => toolbar(ctx, block) })
+    ctx.add(CodeBlock, { languages: [...labels.keys()], render: block => toolbar(ctx, block) })
   },
 })
