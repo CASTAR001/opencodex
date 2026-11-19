@@ -14,6 +14,12 @@
   margin:0; padding:0; list-style:none; overflow-y:auto; overflow-x:hidden; min-height:0;
   scrollbar-width:none; overscroll-behavior:contain; pointer-events:auto;
 }
+.ocx-prompt-nav .pn-ticks[data-more-before] { --pn-top:rgb(0 0 0 / .23); }
+.ocx-prompt-nav .pn-ticks[data-more-after] { --pn-bottom:rgb(0 0 0 / .23); }
+.ocx-prompt-nav .pn-ticks:is([data-more-before],[data-more-after]) {
+  mask-image:linear-gradient(to bottom,var(--pn-top,black),black var(--pn-edge),
+    black calc(100% - var(--pn-edge)),var(--pn-bottom,black));
+}
 .ocx-prompt-nav .pn-ticks::-webkit-scrollbar { display:none; }
 .ocx-prompt-nav .pn-row { padding:0; margin:0; list-style:none; height:var(--pn-step,10px); }
 .ocx-prompt-nav .pn-tick {

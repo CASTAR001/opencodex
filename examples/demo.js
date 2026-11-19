@@ -4,12 +4,12 @@ import { prompts, replies, title } from './conversation.js'
 const stage = document.querySelector('main')
 const paper = document.querySelector('article')
 document.querySelector('h1').textContent = title
-const labels = [...prompts,...Array.from({length:40},(_,i)=>'复核第 '+(i+1)+' 组海岸样本。')]
+const labels = [...prompts,...Array.from({length:108},(_,i)=>'复核第 '+(i+1)+' 组海岸样本。')]
 const rows = labels.map((label,index)=>({label,id:'prompt-'+(index+1)}))
 const key = 'ocx-prompt-nav-offline-example-v1'
 let saved
 try { saved = JSON.parse(localStorage.getItem(key)) } catch { /* Private browsing may be read-only. */ }
-if (!Array.isArray(saved)) saved = [rows[0].id,rows[4].id,rows[8].id]
+if (!Array.isArray(saved)) saved = [rows[0].id,rows[4].id,rows[8].id,rows[92].id,rows[113].id]
 const sections = new Map()
 const rail = createRail({
   href: id => '#'+id,
@@ -57,4 +57,5 @@ function track() {
   rail.current(id)
 }
 paper.addEventListener('scroll',track,{passive:true})
+paper.scrollTop = paper.scrollHeight
 track()
