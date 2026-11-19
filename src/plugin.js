@@ -1,10 +1,11 @@
-import { Plugin, Slot, Style } from '@opencode/plugin/gui'
+import { Plugin, Slot, Style, TitlebarItem } from '@opencode/plugin/gui'
 import { createComponent, createEffect, onCleanup } from 'solid-js'
 import { families, contract, unavailable } from './contract.js'
 import css from './style.css'
 
 const number = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 })
 const fmt = (n) => (Number.isFinite(n) ? number.format(n) : '—')
+const quotaNumber = new Intl.NumberFormat('zh-CN', { maximumSignificantDigits: 21 })
 const time = (t) =>
   new Date(t).toLocaleString('zh-CN', {
     month: 'numeric',
@@ -91,7 +92,7 @@ function usageView(stats, media, providers, showMini) {
   }
   return box
 }
-function dashboard(ctx, session, cache) {
+function dashboard(ctx, session) {
   const root = el('div', null, 'pq-page')
   const toolbar = el('div', null, 'pq-toolbar'),
     nav = el('nav'),
@@ -99,8 +100,8 @@ function dashboard(ctx, session, cache) {
     content = el('div'),
     status = el('p', null, 'pq-muted')
   status.setAttribute('role', 'status')
-  const pages = ['用量统计', '账户额度']
-  let index = 0,
+  const pages = { quota: '剩余额度', usage: '用量统计' }
+  let index = 'quota',
     days = 7,
     filter = '',
     alive = true,
@@ -114,12 +115,13 @@ function dashboard(ctx, session, cache) {
   const location = session.location
   const client = session.server.client
   const api = client.rpc(contract)
-  const accountKey =
-    session.server.id + '\n' + (location?.workspaceID || '') + '\n' + (location?.directory || '')
-  if (!cache.has(accountKey)) cache.set(accountKey, new Map())
-  const history = cache.get(accountKey)
-  const busy = new Set()
-  const buttons = pages.map((label, i) => btn(label, () => switchTo(i)))
+  const lifetime = new AbortController()
+  const history = new Map()
+  const busy = new Map()
+  const keys = Object.keys(pages)
+  const buttons = keys.map(key => btn(pages[key], () => {
+    if (key !== index) switchTo(key)
+  }))
   nav.append(...buttons)
   toolbar.append(nav, controls)
   root.append(toolbar, content, status)
@@ -155,7 +157,7 @@ function dashboard(ctx, session, cache) {
     return card
   }
   function drawUsage() {
-    if (!discovered || !configured.length || index !== 0) return
+    if (!discovered || !configured.length || index !== 'usage') return
     const general = configured.filter((r) => r.family !== 'mimo' && (!filter || r.family === filter))
     const period = controls.querySelector('[aria-label="统计时段"]')
     if (period) period.hidden = !general.length
@@ -176,7 +178,7 @@ function dashboard(ctx, session, cache) {
     if (!alive || document.hidden) return
     const ticket = ++inventorySerial
     try {
-      const list = await api.inventory({}, { location, signal: AbortSignal.timeout(12000) })
+      const list = await api.inventory({}, { location, signal: AbortSignal.any([lifetime.signal, AbortSignal.timeout(12000)]) })
       if (!alive || ticket !== inventorySerial) return
       const changed = !discovered || JSON.stringify(list) !== JSON.stringify(configured)
       discovered = true
@@ -184,10 +186,12 @@ function dashboard(ctx, session, cache) {
       for (const [id, cached] of history) {
         if (JSON.stringify(list.find((r) => r.family === id)) !== cached.connection) history.delete(id)
       }
+      const changedAccounts = list.filter(row =>
+        JSON.stringify(configured.find(previous => previous.family === row.family)) !== JSON.stringify(row))
       configured = list
       if (!has(filter)) filter = ''
       stats = media = mimo = lastRead = undefined
-      switchTo(index)
+      switchTo(index, changedAccounts)
     } catch {
       if (alive && ticket === inventorySerial) status.textContent = '暂时无法读取当前服务商配置。'
     }
@@ -200,7 +204,7 @@ function dashboard(ctx, session, cache) {
     const now = new Date(),
       span = range(days, now),
       week = range(7, now)
-    const general = index === 0 && configured.some((r) => r.family !== 'mimo')
+    const general = index === 'usage' && configured.some((r) => r.family !== 'mimo')
     const readOptions = { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) }
     const local = { ...readOptions, location }
     try {
@@ -222,10 +226,10 @@ function dashboard(ctx, session, cache) {
       media = calls.status === 'fulfilled' ? calls.value : undefined
       mimo = estimate.status === 'fulfilled' ? estimate.value : { problem: '暂时无法读取本机用量' }
       if (data.status === 'fulfilled' && general) stats = data.value
-      if (index === 0) drawUsage()
+      if (index === 'usage') drawUsage()
       else drawQuotas()
       if (data.status === 'rejected') status.textContent = '暂时无法读取模型统计。'
-      else if (index === 0) {
+      else if (index === 'usage') {
         lastRead = Date.now()
         status.textContent = '当前服务器 · 所有项目 · 更新于 ' + time(lastRead)
       }
@@ -234,7 +238,7 @@ function dashboard(ctx, session, cache) {
     }
   }
   function drawQuotas() {
-    if (!alive || index !== 1) return
+    if (!alive || index !== 'quota') return
     const cards = options().map(([id, name]) => {
       if (id === 'mimo') return mimoCard()
       const card = el('section', null, 'pq-card'),
@@ -248,30 +252,22 @@ function dashboard(ctx, session, cache) {
       }
       card.append(top)
       const entries = history.get(id)?.rows
-      if (!entries) card.append(el('p', unavailable[id] || '尚未手动查询', 'pq-muted'))
+      if (!entries) card.append(el('p', unavailable[id] || (busy.has(id) ? '正在查询额度…' : '等待查询'), 'pq-muted'))
       for (const entry of entries || []) {
-        if (entry.source) card.append(el('small', entry.source + ' · ' + entry.host))
         for (const row of entry.values || []) {
-          const reset = row.reset
-            ? row.reset <= Date.now()
-              ? '　窗口已到期，待刷新'
-              : '　重置 ' + time(row.reset)
-            : ''
-          card.append(
-            el(
-              'div',
-              row.label +
-                '　' +
-                (row.unit === '%' ? '剩余 ' : '') +
-                fmt(row.remaining) +
-                (row.unit === '%' ? '%' : ' ' + row.unit) +
-                reset,
-            ),
-          )
+          const reset = row.reset ? '　重置 ' + time(row.reset) : ''
+          const amounts = []
+          const unit = row.unit === '%' ? '%' : row.unit ? ' ' + row.unit : ''
+          const fraction = row.total != null ? ' / ' + quotaNumber.format(row.total) : ''
+          if (row.remaining != null) amounts.push((unit === '%' || !unit ? '剩余 ' : '') + quotaNumber.format(row.remaining) + unit + (!unit ? fraction : ''))
+          if (row.used != null) amounts.push('已用 ' + quotaNumber.format(row.used) + unit + fraction)
+          if (row.count != null) amounts.push('计数 ' + quotaNumber.format(row.count) + fraction)
+          if (row.state) amounts.push(row.state)
+          card.append(el('div', row.label + '　' + amounts.join('　') + reset))
         }
         if (entry.problem) card.append(el('p', entry.problem, 'pq-muted'))
         if (entry.select) {
-          const one = btn('查询此连接', () => refresh(id, entry.source))
+          const one = btn('查询 ' + entry.source, () => refresh(id, entry.source))
           one.disabled = busy.has(id)
           card.append(one)
         }
@@ -284,15 +280,16 @@ function dashboard(ctx, session, cache) {
     if (all) all.disabled = busy.size > 0 || !configured.some((r) => !unavailable[r.family])
   }
   async function refresh(id, source) {
-    if (busy.has(id) || unavailable[id] || !has(id)) return
+    if (unavailable[id] || !has(id)) return
     const connection = JSON.stringify(configured.find((r) => r.family === id))
+    if (busy.get(id) === connection) return
     const valid = () => alive && connection === JSON.stringify(configured.find((r) => r.family === id))
-    busy.add(id)
+    busy.set(id, connection)
     drawQuotas()
     try {
       const rows = await api.refresh(
         { family: id, ...(source && { source }) },
-        { location, signal: AbortSignal.timeout(15000) },
+        { location, signal: AbortSignal.any([lifetime.signal, AbortSignal.timeout(15000)]) },
       )
       if (valid())
         history.set(id, {
@@ -304,7 +301,7 @@ function dashboard(ctx, session, cache) {
     } catch {
       if (valid()) history.set(id, { connection, rows: [{ problem: '额度服务未连接，请稍后手动刷新' }] })
     } finally {
-      busy.delete(id)
+      if (busy.get(id) === connection) busy.delete(id)
       drawQuotas()
     }
   }
@@ -316,10 +313,10 @@ function dashboard(ctx, session, cache) {
     clearTimeout(queued)
     queued = undefined
   }
-  function switchTo(i) {
+  function switchTo(i, refreshAccounts = configured) {
     cancelUsage()
     index = i
-    buttons.forEach((b, n) => b.setAttribute('aria-pressed', String(i === n)))
+    buttons.forEach((b, n) => b.setAttribute('aria-pressed', String(i === keys[n])))
     controls.replaceChildren()
     content.replaceChildren()
     status.textContent = ''
@@ -327,7 +324,7 @@ function dashboard(ctx, session, cache) {
       status.textContent = discovered ? '当前工作区尚未配置支持的服务商。' : '正在读取当前服务商…'
       return
     }
-    if (i === 0) {
+    if (i === 'usage') {
       controls.append(
         selection(
           '统计时段',
@@ -341,7 +338,7 @@ function dashboard(ctx, session, cache) {
           (v) => {
             days = Number(v)
             stats = media = lastRead = undefined
-            switchTo(0)
+            switchTo('usage')
           },
         ),
         selection('模型服务商', [['', '全部服务商'], ...options()], filter, (v) => {
@@ -353,6 +350,7 @@ function dashboard(ctx, session, cache) {
     } else {
       controls.append(btn('刷新全部额度', () => Promise.all(configured.map((r) => refresh(r.family)))))
       drawQuotas()
+      for (const row of refreshAccounts) void refresh(row.family)
     }
     void readUsage()
     clock = setInterval(readUsage, 60000)
@@ -394,28 +392,54 @@ function dashboard(ctx, session, cache) {
   })
   onCleanup(() => {
     alive = false
+    lifetime.abort()
     cancelUsage()
     stop?.()
     clearInterval(inventoryClock)
     document.removeEventListener('visibilitychange', visible)
   })
-  switchTo(0)
+  switchTo('quota')
   void discover()
-  return createComponent(ctx.ui.Dialog, { title: '用量与额度', size: 'large', children: root })
+  return createComponent(ctx.ui.Dialog, { title: session.location ? '用量与额度' : '用量与额度 · 本机全局', size: 'large', children: root })
 }
 export default Plugin.define({
   setup(ctx) {
-    const cache = new Map()
     ctx.add(Style, css)
+    const draft = () => ctx.router.path().split('?')[0] === '/new-session'
+    const localAccount = () => {
+      const server = ctx.servers.list().map(id => ctx.servers.get(id)).find(server => server?.builtin)
+      if (server) return { server }
+    }
+    const show = account => ctx.dialogs.open(() => dashboard(ctx, account))
+    const wallet = (open, global) => {
+      const button = btn(null, open)
+      button.className = 'pq-open'
+      button.title = global ? '查看本机全局额度' : '查看用量与额度'
+      button.setAttribute('aria-label', button.title)
+      return button
+    }
+    // The draft's public route has no project location.
+    ctx.add(TitlebarItem, () => {
+      if (!draft()) return
+      const account = localAccount()
+      if (account) return { id: 'draft-quota', icon: 'providers', label: '剩余额度',
+        title: '查看本机全局额度', run: () => show(account) }
+    })
+    // The narrow shell replaces the timeline header with native mobile navigation.
+    ctx.add(Slot, { at: 'window.bottom', render() {
+      const dock = el('div', null, 'pq-narrow-entry')
+      createEffect(() => {
+        const global = draft()
+        const account = global ? localAccount() : ctx.sessions.current()
+        dock.replaceChildren(...(account ? [wallet(() => show(account), global)] : []))
+      })
+      return dock
+    } })
     ctx.add(Slot, {
       at: 'session.header',
       order: 8,
       render(input) {
-        const button = btn(null, () => ctx.dialogs.open(() => dashboard(ctx, input.session, cache)))
-        button.append(createComponent(ctx.ui.Icon, { name: 'window-analytics', size: 'normal' }))
-        button.className = 'pq-open'
-        button.title = '查看用量与额度'
-        button.setAttribute('aria-label', button.title)
+        const button = wallet(() => show(input.session), false)
         createEffect(() => {
           button.hidden = !input.active
         })

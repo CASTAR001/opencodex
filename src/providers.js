@@ -51,10 +51,6 @@ function numeric(value) {
   const n = Number(value)
   if (Number.isFinite(n)) return n
 }
-function percent(value) {
-  const n = numeric(value)
-  if (n != null && n >= 0 && n <= 100) return n
-}
 function date(value) {
   if (!value) return
   const ms = typeof value === 'string' && !/^\d+$/.test(value) ? Date.parse(value) : Number(value)
@@ -65,48 +61,72 @@ function windowRow(label, remaining, resets, unit = '%') {
   return [{ label, remaining, unit, ...(resets && { reset: resets }) }]
 }
 function kimiWindows(body) {
-  const source = body.data?.quota ?? body
-  const keys = {
-    limit5h: '5 小时',
-    limit7d: '7 天',
-    limitMonthTotal: '月度',
-    limitMonthCode: '月度代码',
-    limit_5h: '5 小时',
-    limit_7d: '7 天',
-    limit_month_total: '月度',
-    limit_month_code: '月度代码',
+  const source = body.data?.quota ?? body.data ?? body
+  const names = {
+    limit5h: '5 小时', limit7d: '7 天', limitMonthTotal: '月度', limitMonthCode: '月度代码',
+    monthTotal: '月度', monthCode: '月度代码',
+    limit_5h: '5 小时', limit_7d: '7 天', limit_month_total: '月度', limit_month_code: '月度代码',
   }
-  const result = new Map()
-  for (const [id, item] of Object.entries(source.usages || {})) {
+  const rows = new Map()
+  for (const [key, item] of Object.entries(source.usages ?? body.usages ?? {})) {
+    if (!Object.hasOwn(names, key)) continue
+    const label = names[key]
     const ratio = numeric(item?.usedRatio ?? item?.used_ratio)
-    if (Object.hasOwn(keys, id) && ratio != null && ratio >= 0 && ratio <= 1)
-      result.set(keys[id], windowRow(keys[id], (1 - ratio) * 100, date(item.resetAt ?? item.reset_time))[0])
+    const reset = date(item?.resetAt ?? item?.reset_at ?? item?.reset_time)
+    rows.set(label, ratio != null
+      ? { label, used: Number((ratio * 100).toPrecision(15)), unit: '%', reset }
+      : { label, state: '未返回读数', reset })
   }
-  for (const item of source.limits || []) {
-    const w = item.window,
-      d = item.detail
-    if (!w || !d) continue
-    const total = numeric(d.limit),
-      used = numeric(d.used),
-      left = numeric(d.remaining)
-    if (!(total > 0) || (left == null && used == null)) continue
-    const n = percent(((left ?? total - used) / total) * 100)
-    if (n == null) continue
-    const label =
-      w.duration == 300 && /MINUTE/i.test(w.timeUnit)
-        ? '5 小时'
-        : w.duration == 7 && /DAY/i.test(w.timeUnit)
-          ? '7 天'
-          : String(w.duration) + ' ' + String(w.timeUnit || '').replace('TIME_UNIT_', '')
-    // Two generations of this endpoint can disagree. Never silently pick the greater balance.
-    const previous = result.get(label)
-    if (previous && Math.abs(previous.remaining - n) > 0.1) {
-      result.delete(label)
-      continue
+  function detail(label, data) {
+    if (!data) return
+    const total = numeric(data.limit)
+    const remaining = numeric(data.remaining)
+    const used = numeric(data.used)
+    const previous = rows.get(label)
+    const reset = date(data.resetTime ?? data.reset_time) ?? previous?.reset
+    if (remaining != null || used != null) {
+      rows.set(label, {label, remaining, used, total, reset})
+    } else if (!previous && reset) {
+      rows.set(label, {label, state:'未返回读数', reset})
     }
-    result.set(label, windowRow(label, n, date(d.resetTime))[0])
   }
-  return [...result.values()]
+  detail('7 天', source.usage ?? body.usage)
+  const limits = source.limits ?? body.limits
+  for (const item of Array.isArray(limits) ? limits : []) {
+    const w = item?.window
+    const unit = String(w?.timeUnit ?? w?.time_unit ?? '').replace(/^TIME_UNIT_/i,'').toUpperCase()
+    const duration = numeric(w?.duration)
+    if (!(duration > 0) || !unit) continue
+    const hours = duration * ({ MINUTE: 1/60, HOUR: 1, DAY: 24, WEEK: 168 }[unit] ?? 0)
+    const label = hours === 5 ? '5 小时' : hours === 168 ? '7 天' : duration + ' ' + unit
+    detail(label, item.detail)
+  }
+  if (!rows.size) return []
+  return ['5 小时','7 天', ...[...rows.keys()].filter(k => k !== '5 小时' && k !== '7 天')]
+    .map(label => rows.get(label) ?? { label, state: '接口未返回此窗口' })
+}
+
+function miniWindows(model, now) {
+  if (!model || typeof model !== 'object') return []
+  const name = String(model.model_name || '套餐')
+  return ['interval','weekly'].map(period => {
+    const weekly = period === 'weekly'
+    const prefix = 'current_' + period + '_'
+    const start = date(model[weekly ? 'weekly_start_time' : 'start_time'])
+    const end = date(model[weekly ? 'weekly_end_time' : 'end_time'])
+    const hours = (end - start) / 3600000
+    const duration = Number.isInteger(hours) && hours > 0
+      ? (hours % 24 === 0 ? hours / 24 + ' 天' : hours + ' 小时') : '周期窗口'
+    const label = name + ' · ' + (weekly ? '周窗口' : duration)
+    const offset = numeric(model[weekly ? 'weekly_remains_time' : 'remains_time'])
+    const reset = end ?? (offset >= 0 ? date(now + offset) : undefined)
+    const remaining = numeric(model[prefix + 'remaining_percent'])
+    const count = numeric(model[prefix + 'usage_count'])
+    const total = numeric(model[prefix + 'total_count'])
+    const status = numeric(model[prefix + 'status'])
+    return { label, remaining, unit: '%', count, total, reset,
+      state: remaining == null && count == null ? (status == null ? '未返回读数' : '状态 ' + status) : undefined }
+  })
 }
 export function parseQuota(route, body, now) {
   if (
@@ -129,32 +149,14 @@ export function parseQuota(route, body, now) {
   if (route.kind === 'coding') return kimiWindows(body)
   if (route.kind === 'glm')
     return (body.data?.limits || []).flatMap((item) => {
-      const used = percent(item.percentage)
+      const used = numeric(item.percentage)
       const type = { TOKENS_LIMIT: '模型用量', TIME_LIMIT: '工具调用', CREDIT_LIMIT: '点数' }[item.type]
       if (!type || used == null) return []
       const unit = { 3: '小时', 4: '天', 5: '月', 6: '周' }[item.unit]
-      return windowRow(
-        type + (unit && item.number ? ' · ' + item.number + ' ' + unit : ''),
-        100 - used,
-        date(item.nextResetTime),
-      )
+      return [{ label: type + (unit && item.number ? ' · ' + item.number + ' ' + unit : ''),
+        used, unit: '%', reset: date(item.nextResetTime) }]
     })
   if (route.kind === 'mini')
-    return (body.model_remains || []).flatMap((m) =>
-      ['interval', 'weekly'].flatMap((period) => {
-        const prefix = 'current_' + period + '_'
-        const total = numeric(m[prefix + 'total_count']),
-          raw = numeric(m[prefix + 'usage_count'])
-        const offset = numeric(m[period === 'weekly' ? 'weekly_remains_time' : 'remains_time'])
-        let remaining = percent(m[prefix + 'remaining_percent'])
-        if (remaining == null && total > 0 && raw != null && raw >= 0 && raw <= total)
-          remaining = (100 * (route.region === 'CN' ? total - raw : raw)) / total
-        return windowRow(
-          String(m.model_name || '套餐') + ' · ' + (period === 'weekly' ? '周窗口' : '周期窗口'),
-          remaining,
-          offset >= 0 ? date(now + offset) : undefined,
-        )
-      }),
-    )
+    return Array.isArray(body.model_remains) ? body.model_remains.flatMap(model => miniWindows(model, now)) : []
   return []
 }

@@ -31,19 +31,18 @@ export function quotaService(ctx, mcpAccounts, request = fetch, clock = Date.now
   const pending = new Map(),
     cooldown = new Map()
   async function read(account, key, signal) {
-    const { route, source } = account
-    const base = { source, host: route.host }
-    if (!key) return { ...base, problem: '未找到可用的 API Key' }
+    const { route } = account
+    if (!key) return { problem: '未找到可用的 API Key' }
     const id = route.endpoint + ' ' + createHash('sha256').update(key).digest('hex')
-    if (pending.has(id)) return { ...(await pending.get(id)), ...base }
-    if ((cooldown.get(id) ?? 0) > clock())
+    if (pending.has(id)) return pending.get(id)
+    const recent = cooldown.get(id)
+    if (recent > clock())
       return {
-        ...base,
-        problem: '请在 ' + new Date(cooldown.get(id)).toLocaleTimeString() + ' 后再手动刷新',
+        problem: '请在 ' + new Date(recent).toLocaleTimeString() + ' 后再手动刷新',
       }
     const promise = (async () => {
       const at = clock()
-      cooldown.set(id, at + 5000)
+      cooldown.delete(id)
       try {
         const timeout = AbortSignal.timeout(8000)
         const res = await request(route.endpoint, {
@@ -64,14 +63,14 @@ export function quotaService(ctx, mcpAccounts, request = fetch, clock = Date.now
           return { at, problem: reasons[res.status] || '额度接口返回 HTTP ' + res.status }
         }
         const values = parseQuota(route, await res.json(), at)
-        return values.length ? { at, values } : { at, problem: '未返回可核验的余额或套餐窗口' }
+        return values.length ? { at, values } : { at, problem: '接口未返回余额或套餐窗口' }
       } catch {
         return { at, problem: '额度查询未完成，请稍后手动重试' }
       }
     })()
     pending.set(id, promise)
     try {
-      return { ...base, ...(await promise) }
+      return await promise
     } finally {
       pending.delete(id)
     }
@@ -109,7 +108,6 @@ export function quotaService(ctx, mcpAccounts, request = fetch, clock = Date.now
         if (ambiguous)
           return {
             source: account.source,
-            host: account.route.host,
             select: true,
             problem: '同一 Key 对应多个站点，请选择实际使用的连接。',
           }

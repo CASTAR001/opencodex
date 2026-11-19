@@ -34,44 +34,19 @@ test('balance and plan routes distinguish official regions, custom hosts and zer
   for (const v of [null, '', false, {}, Infinity])
     assert.deepEqual(parseQuota(ds, { balance_infos: [{ currency: 'CNY', total_balance: v }] }, now), [])
 })
-test('Kimi Code ratios and legacy windows preserve uncertainty and timestamps', () => {
+test('Kimi shows API counters, weekly usage and summary-only windows without reconciling values', () => {
   const route = routeFor('kimi-for-coding')
-  assert.equal(
-    parseQuota(
-      route,
-      { data: { quota: { usages: { limit5h: { usedRatio: 0.25, resetAt: '2026-11-19T14:00:00Z' } } } } },
-      now,
-    )[0].remaining,
-    75,
-  )
-  assert.deepEqual(
-    parseQuota(
-      route,
-      {
-        usages: { limit5h: { usedRatio: 0 } },
-        limits: [
-          {
-            window: { duration: 300, timeUnit: 'TIME_UNIT_MINUTE' },
-            detail: { limit: '100', used: '100' },
-          },
-        ],
-      },
-      now,
-    ),
-    [],
-  )
-  assert.equal(
-    parseQuota(
-      route,
-      {
-        limits: [
-          { window: { duration: 7, timeUnit: 'TIME_UNIT_DAY' }, detail: { limit: 20, remaining: 0 } },
-        ],
-      },
-      now,
-    )[0].remaining,
-    0,
-  )
+  const rows = parseQuota(route, { usages: {limit_5h:{used_ratio:0}, limit_7d:{used_ratio:0}},
+    usage:{limit:'100',remaining:'71'}, limits:[{window:{duration:300,timeUnit:'TIME_UNIT_MINUTE'},
+      detail:{limit:'100',used:'88',remaining:'12',resetTime:now}}] },now)
+  assert.deepEqual(rows.map(r=>[r.label,r.remaining,r.total]),[['5 小时',12,100],['7 天',71,100]])
+  assert.equal(rows[0].reset,now)
+  const onlyWeek = parseQuota(route,{data:{quota:{usages:{limit7d:{usedRatio:0.25},monthCode:{usedRatio:0}}}}},now)
+  assert.match(onlyWeek[0].state,/未返回/)
+  assert.deepEqual(onlyWeek.slice(1).map(r=>r.used),[25,0])
+  const used = parseQuota(route,{limits:[{window:{duration:5,time_unit:'HOUR'},detail:{limit:100,used:100}}]},now)[0]
+  assert.equal(used.used,100)
+  assert.equal(used.remaining,undefined)
 })
 test('GLM and MiniMax window meanings and units', () => {
   assert.equal(
@@ -79,8 +54,8 @@ test('GLM and MiniMax window meanings and units', () => {
       routeFor('zhipuai'),
       { code: 200, data: { limits: [{ type: 'TOKENS_LIMIT', percentage: 100, nextResetTime: now }] } },
       now,
-    )[0].remaining,
-    0,
+    )[0].used,
+    100,
   )
   const mini = {
     base_resp: { status_code: 0 },
@@ -97,13 +72,26 @@ test('GLM and MiniMax window meanings and units', () => {
   }
   const cn = parseQuota(routeFor('minimax-cn'), mini, now),
     intl = parseQuota(routeFor('minimax'), mini, now)
-  assert.equal(cn[0].remaining, 75)
-  assert.equal(intl[0].remaining, 25)
+  assert.equal(cn[0].remaining, undefined)
+  assert.deepEqual([cn[0].count,cn[0].total],[10,40])
+  assert.deepEqual(cn,intl)
   assert.equal(cn[1].remaining, 0)
   assert.equal(cn[1].reset, now + 10000)
   assert.deepEqual(parseQuota(routeFor('minimax'), { ...mini, base_resp: { status_code: 1 } }, now), [])
 })
-test('manual-only API keys, no OAuth resolution, no cross-host fallback, no secrets returned', async () => {
+test('MiniMax retains returned media counters, window endpoints and raw percentages', () => {
+  const rows = parseQuota(routeFor('minimax-cn'),{model_remains:[
+    {model_name:'speech',start_time:now,end_time:now+86400000,current_interval_total_count:300,
+      current_interval_usage_count:12,current_interval_remaining_percent:90,weekly_end_time:now+604800000},
+    {model_name:'image',current_interval_remaining_percent:0,current_weekly_remaining_percent:125}]},now)
+  assert.deepEqual(rows.map(r=>r.label),['speech · 1 天','speech · 周窗口','image · 周期窗口','image · 周窗口'])
+  assert.deepEqual([rows[0].remaining,rows[0].count,rows[0].total],[90,12,300])
+  assert.equal(rows[1].reset,now+604800000)
+  assert.match(rows[1].state,/未返回/)
+  assert.equal(rows[2].remaining,0)
+  assert.equal(rows[3].remaining,125)
+})
+test('on-demand API keys, no OAuth resolution, no cross-host fallback, no secrets returned', async () => {
   let calls = 0,
     lookups = 0,
     credentials = 0
@@ -151,6 +139,9 @@ test('manual-only API keys, no OAuth resolution, no cross-host fallback, no secr
   assert.equal(first[0].values[0].remaining, 0)
   assert.equal(second[1].values, undefined)
   assert.ok(!JSON.stringify(first).includes('synthetic'))
+  assert.deepEqual(Object.keys(first[0]).sort(), ['at', 'values'])
+  await fn('deepseek')
+  assert.equal(calls, 2)
 })
 test('manual retry respects 429 and never retries automatically', async () => {
   let t = now,
@@ -228,7 +219,7 @@ test('shared regional keys require a deliberate choice of destination', async ()
   const both = await service('kimi')
   assert.equal(urls.length, 0)
   assert.ok(both.every((x) => x.select))
-  assert.equal((await service('kimi', undefined, 'kimi-code-plan-cn'))[0].values[0].remaining, 80)
+  assert.equal((await service('kimi', undefined, 'kimi-code-plan-cn'))[0].values[0].used, 20)
   assert.deepEqual(urls, ['https://api.kimi.com/coding/v1/usages'])
   await service('kimi', undefined, 'https://foreign.test')
   assert.equal(urls.length, 1)
@@ -273,7 +264,7 @@ test('active integration keys are resolved only when inline credentials are abse
   assert.match((await read('glm'))[0].problem, /Key/)
   assert.equal(resolved, 1)
 })
-test('server hook records a closed-dashboard MiniMax call and resolves the MCP account only on manual refresh', async () => {
+test('server hook records a closed-dashboard MiniMax call and resolves the MCP account only on quota request', async () => {
   const { default: plugin } = await import('../src/server.js')
   const data = new Map(),
     handlers = {}
