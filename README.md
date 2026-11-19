@@ -1,6 +1,6 @@
 # OpenCodex · OpenCode Desktop 插件合集
 
-面向 macOS OpenCode Desktop 2.3.2 的模块化界面增强项目。代码块插件 02 为会话和右侧 Markdown 文件提供语言标签、逐块换行和复制。会话统计插件 06 在会话顶栏显示缓存命中率、跨模型实时 TPS 和上下文使用率，点击读数可打开明细。顶栏空间不足时自动隐藏读数。
+面向 macOS OpenCode Desktop 2.3.2 的模块化界面增强项目。代码块插件 02 为会话和右侧 Markdown 文件提供限高滚动、逐块行号与换行，并支持补丁的片段阅读与增删对照。会话统计插件 06 在会话顶栏显示缓存命中率、跨模型实时 TPS 和上下文使用率，点击读数可打开明细。顶栏空间不足时自动隐藏读数。
 
 - [功能需求与开发顺序](REQUIREMENTS.md)
 - [逐项可行性与源码依据](FEASIBILITY.md)
@@ -13,7 +13,7 @@
 
 | 编号 | 组件 | 当前状态 |
 |---|---|---|
-| 02 | [Code Block Enhancer](projects/code-block-enhancer/README.md) | `0.1.0-alpha.5`，覆盖 Desktop 2.3.2 内置高亮语言及其别名 |
+| 02 | [Code Block Enhancer](projects/code-block-enhancer/README.md) | `0.1.0-alpha.8`，Diff 默认展示修改后的片段，± 切换增删对照，复制保留完整补丁 |
 | 03 | [Markdown Presentation Enhancer](projects/markdown-presentation/README.md) | 预研 |
 | 04 | [Compact Auto Collapse](projects/compact-auto-collapse/README.md) | 预研 |
 | 05 | [Execution Timeline Auto Collapse](projects/execution-timeline/README.md) | 预研 |

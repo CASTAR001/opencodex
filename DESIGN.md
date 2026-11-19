@@ -17,7 +17,7 @@ git clone --single-branch --branch plugins/code-block-enhancer https://github.co
 | 组件或工作区 | 所有权与阶段 |
 |---|---|
 | ux-integration | 源码证据、版本组合、跨插件验收与复跑入口 |
-| code-block-enhancer | 02 · 代码围栏顶栏、复制与逐块换行。alpha.5 已验证会话和右侧文件预览中的代码围栏 |
+| code-block-enhancer | 02 · 会话与右侧 Markdown 文件内的代码围栏。alpha.8 支持限高滚动、吸顶工具栏、逐块行号与换行，以及 Diff 片段和增删对照 |
 | markdown-presentation | 03 · assistant 正文的排版。第一批后续 |
 | compact-auto-collapse | 04 · 压缩摘要。第三批，先评估原生 |
 | execution-timeline | 05 · 回合中间活动的展示。第三批 |

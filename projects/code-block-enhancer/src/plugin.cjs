@@ -1,7 +1,8 @@
 const { Plugin, CodeBlock, Style } = require('@opencode/plugin/gui')
-const { createComponent, createEffect, createSignal, onMount } = require('solid-js')
+const { createComponent, createEffect, onCleanup, onMount } = require('solid-js')
 const { insert } = require('solid-js/web')
 const styles = require('./toolbar.css')
+const { mountControls } = require('./controls.cjs')
 
 // The GUI matches literal fence tags. These groups cover Desktop 2.3.2's bundled
 // @pierre/highlights languages and our existing Markdown/plain-text aliases.
@@ -55,36 +56,17 @@ for (const [label, tags] of Object.entries(aliases)) {
 
 function toolbar(ctx, block) {
   const header = document.createElement('div')
-  const language = document.createElement('span')
-  language.textContent = labels.get(block.language)
-  const wrap = document.createElement('button')
-  wrap.type = 'button'
-  const [wrapped, setWrapped] = createSignal(true)
-  wrap.onclick = () => setWrapped(value => !value)
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-  svg.setAttribute('viewBox', '0 0 16 16')
-  svg.setAttribute('aria-hidden', 'true')
-  const lines = document.createElementNS(svg.namespaceURI, 'path')
-  svg.append(lines)
-  wrap.append(svg)
-  createEffect(() => {
-    const label = ctx.t('wrap')
-    const softWrap = wrapped()
-    lines.setAttribute('d', softWrap
-      ? 'M2 3.5h12 M2 7.5h9.5a2.5 2.5 0 0 1 0 5h-4 M9.5 10.5l-2 2 2 2 M2 12.5h2.5'
-      : 'M2 3.5h8 M2 8h12 M11.5 5.5 14 8l-2.5 2.5 M2 12.5h8')
-    wrap.setAttribute('aria-label', label)
-    wrap.setAttribute('aria-pressed', String(softWrap))
-    wrap.title = softWrap ? ctx.t('keepLines') : label
-  })
-  header.append(language, wrap)
   onMount(() => {
     // Desktop keeps the highlighted pre and native Copy when it mounts our renderer.
     const slot = header.closest('[data-slot="markdown-code-content"]')
     const fence = slot?.parentElement
     if (fence?.matches('[data-component="markdown-code"]') &&
         fence.querySelector(':scope > pre > code') && fence.querySelector(':scope > [data-slot="markdown-copy-button"]')) {
-      header.dataset.ocxCodeHeader = ''
+      const controls = mountControls(header, fence, labels.get(block.language))
+      createEffect(() => controls.labels({ diff: ctx.t('diff'), hideDiff: ctx.t('hideDiff'),
+        deleted: ctx.t('deleted'), copyPatch: ctx.t('copyPatch'), noCoordinates: ctx.t('noCoordinates'), numbers: ctx.t('numbers'), hideNumbers: ctx.t('hideNumbers'),
+        wrap: ctx.t('wrap'), keepLines: ctx.t('keepLines') }))
+      onCleanup(controls.dispose)
       return
     }
     // A different host layout must still show the source via the public Code component.
@@ -96,9 +78,9 @@ function toolbar(ctx, block) {
 
 exports.default = Plugin.define({
   i18n: {
-    en: { wrap: 'Wrap lines', keepLines: 'Show original lines' },
-    zh: { wrap: '自动换行', keepLines: '按原行显示' },
-    zht: { wrap: '自動換行', keepLines: '依原行顯示' },
+    en: { diff: 'Review changes', hideDiff: 'Show resulting snippet', deleted: 'This section was deleted', copyPatch: 'Copy original patch', noCoordinates: 'No source line numbers in this patch', numbers: 'Show line numbers', hideNumbers: 'Hide line numbers', wrap: 'Wrap lines', keepLines: 'Show original lines' },
+    zh: { diff: '查看增删', hideDiff: '查看修改后的片段', deleted: '此段已删除', copyPatch: '复制原始补丁', noCoordinates: '补丁未提供源文件行号', numbers: '显示行号', hideNumbers: '隐藏行号', wrap: '自动换行', keepLines: '按原行显示' },
+    zht: { diff: '檢視增刪', hideDiff: '檢視修改後的片段', deleted: '此段已刪除', copyPatch: '複製原始補丁', noCoordinates: '補丁未提供原始檔行號', numbers: '顯示行號', hideNumbers: '隱藏行號', wrap: '自動換行', keepLines: '依原行顯示' },
   },
   setup(ctx) {
     ctx.add(Style, styles)
