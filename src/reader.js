@@ -59,7 +59,7 @@ export function reader(ctx, source, path, session) {
     return section
   })
   onCleanup(bindFootnotes(article))
-  onCleanup(bindWebLinks(article, { open: url => ctx.system.openExternal(url), copy: url => ctx.system.copy(url) }))
+  onCleanup(bindWebLinks(article, url => ctx.system.openExternal(url)))
   function openLocalFile(event) {
     if (event.type === 'keydown' && event.key !== 'Enter') return
     const href = event.target.closest?.('a[data-local-link]')?.dataset.localLink

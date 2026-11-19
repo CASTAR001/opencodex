@@ -13,8 +13,17 @@ export function linkName(href) {
     try { return decodeURIComponent(part).replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, '') }
     catch { return part }
   })
-  if (url.host === 'github.com' && path.length === 2) return 'GitHub · ' + path.join('/')
-  return url.host + (path.length ? ' · ' + path.join(' / ') : '')
+  if (url.host === 'github.com' && path.length === 2 && path.every(part => /^[\w.-]+$/.test(part))) return path.join('/')
+  const leaf = (path.at(-1) ?? '').replace(/\.(?:s?html?|aspx?|php|pdf)$/i, '')
+  // An opaque article ID gives no evidence of a page title. The hostname is still useful.
+  if (!/(?:\p{L}{2}|\p{Script=Han})/u.test(leaf) || /\d{5,}/.test(leaf)) return url.host
+  const title = leaf.replace(/[-_]+/g, ' ').trim()
+  const letters = Array.from(title)
+  if (letters.length <= 36) return url.host + ' · ' + title
+  const prefix = letters.slice(0, 35).join('')
+  const lastSpace = prefix.lastIndexOf(' ')
+  const short = lastSpace > 0 && letters[35] !== ' ' ? prefix.slice(0, lastSpace) : prefix
+  return url.host + ' · ' + short.trimEnd() + '…'
 }
 
 function applyEdits(text, edits, start = 0, end = text.length) {
@@ -86,14 +95,23 @@ export function projectDocument(text, scope, path = '') {
         const title = image.title ? ' "' + image.title.replace(/["\\]/g, '\\$&') + '"' : ''
         value = '![' + alt + '](<' + target + '>' + title + ')'
       }
-    } else if (node.type === 'link') {
+    } else if (node.type === 'link' || node.type === 'linkReference') {
       const raw = slice(node)
-      if (/^<?https?:\/\//i.test(raw) && /^https?:\/\//i.test(node.url)) {
+      const href = node.type === 'link' ? node.url : destinations.get(node.identifier)?.url
+      const labelNode = node.children.length === 1 && node.children[0]
+      const bare = /^(?:<?https?:\/\/|www\.)/i.test(raw)
+      if (/^https?:\/\//i.test(href ?? '') && (bare || (labelNode?.type === 'text' && labelNode.value === href))) {
         let label
-        try { label = linkName(node.url) } catch { return }
+        try { label = linkName(href) } catch { return }
         const escapeLabel = label.replace(/[\\\[\]*_`<>&|~$!]/g, ch => '&#' + ch.codePointAt(0) + ';')
-        const destination = node.url.replace(/[\\<>\s]/g, ch => encodeURIComponent(ch)).replaceAll('&', '&amp;')
-        value = '[' + escapeLabel + '](<' + destination + '>)'
+        if (bare) {
+          const destination = href.replace(/[\\<>\s]/g, ch => encodeURIComponent(ch)).replaceAll('&', '&amp;')
+          value = '[' + escapeLabel + '](<' + destination + '>)'
+        } else if (node.type === 'linkReference' && node.referenceType !== 'full') {
+          value = '[' + escapeLabel + '][' + slice(labelNode) + ']'
+        } else {
+          edits.push({ start: labelNode.position.start.offset, end: labelNode.position.end.offset, value: escapeLabel })
+        }
       }
     }
     if (value !== undefined) {

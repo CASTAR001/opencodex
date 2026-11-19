@@ -40,10 +40,24 @@ test('literal syntax stays in markup examples, math, escaped text, metadata and 
 test('bare and angle links get truthful offline labels and preserve the destination', () => {
   const href = 'https://example.org/docs/guide?a=1&b=2#part'
   const {body} = projectDocument('<' + href + '>\n\nhttps://github.com/Zettlr/Zettlr', 'id')
-  assert.ok(body.includes('[example.org · docs / guide](<' + href.replace('&','&amp;') + '>)'))
-  assert.ok(body.includes('[GitHub · Zettlr/Zettlr]'))
+  assert.ok(body.includes('[example.org · guide](<' + href.replace('&','&amp;') + '>)'))
+  assert.ok(body.includes('[Zettlr/Zettlr]'))
   assert.equal(linkName('https://example.org/%E6%B5%B7'), 'example.org · 海')
-  assert.equal(linkName('https://github.com:8443/org/project'), 'github.com:8443 · org / project')
+  assert.equal(linkName('https://github.com:8443/org/project'), 'github.com:8443 · project')
+  assert.equal(linkName('https://academic.oup.com/jamia/article/31/10/2294/7713890'), 'academic.oup.com')
+  assert.equal(linkName('https://example.org/an-article-about-a-very-long-and-complicated-subject.html'), 'example.org · an article about a very long and…')
+})
+test('keeps author labels and link titles while shortening URLs used as their own labels', () => {
+  const url = 'https://github.com/zhouxiaoka/autoclip'
+  const named = '[zhouxiaoka/autoclip](' + url + ')'
+  const source = [named, '['+url+']('+url+' "仓库")', '['+url+'][ref]', '['+url+'][]', '['+url+']',
+    '[ref]: '+url, '['+url+']: '+url, 'www.example.org/guide'].join('\n\n')
+  const {body} = projectDocument(source,'id')
+  assert.ok(body.startsWith(named))
+  assert.ok(body.includes('[zhouxiaoka/autoclip]('+url+' "仓库")'))
+  assert.ok(body.includes('[zhouxiaoka/autoclip][ref]'))
+  assert.equal(body.split('[zhouxiaoka/autoclip]['+url+']').length-1, 2)
+  assert.match(body, /\[www\.example\.org · guide\]/)
 })
 test('definitions can link to later notes without recursing forever', () => {
   const doc = projectDocument('a[^one]\n\n[^one]: see [^two]\n\n[^two]: see [^one]', 'id')

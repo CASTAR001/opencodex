@@ -51,6 +51,8 @@ source_example = "[^note] https://example.org/tide"
 早期笔记里还剩一个没有起名的仓库链接：
 https://github.com/Zettlr/Zettlr
 
+笔记所用的 Markdown 解析器源码见 [micromark/micromark](https://github.com/micromark/micromark)。
+
 另一个裸链接指向具体说明页：
 https://quarto.org/docs/authoring/article-layout.html
 
