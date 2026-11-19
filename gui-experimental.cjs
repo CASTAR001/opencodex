@@ -344,6 +344,9 @@ function createRail({ href, jump, star, retry }) {
       if (column) waiting.disconnect();
       else waiting.observe(content, { childList: true, subtree: true });
       const room = column?.getBoundingClientRect();
+      const bounds = panel.getBoundingClientRect();
+      const pageOffset = (document.documentElement.clientHeight - bounds.top - bounds.bottom) / 2;
+      nav.style.setProperty("--pn-page-offset", pageOffset + "px");
       const track = nav.getBoundingClientRect();
       const hide = !room?.width || !track.width || track.right + 8 > room.left;
       if (nav.inert !== hide) {
@@ -355,6 +358,7 @@ function createRail({ href, jump, star, retry }) {
       }
       size();
     }
+    resize.observe(document.documentElement);
     resize.observe(panel);
     resize.observe(nav);
     measure();
@@ -407,7 +411,10 @@ function createRail({ href, jump, star, retry }) {
 
 // src/rail.css
 var rail_default = `.ocx-prompt-nav {
-  position:absolute; z-index:32; left:8px; top:56px; bottom:92px; width:26px;
+  position:absolute; z-index:32; left:8px; width:26px;
+  --pn-inset:min(18%,180px);
+  --pn-shift:clamp(calc(var(--pn-inset) / -2),var(--pn-page-offset,0px),calc(var(--pn-inset) / 2));
+  inset-block:calc(var(--pn-inset) + var(--pn-shift)) calc(var(--pn-inset) - var(--pn-shift));
   display:flex; flex-direction:column; justify-content:center; pointer-events:none;
   --pn-ink:var(--v2-text-text-base,#443d34);
   --pn-muted:var(--v2-text-text-muted,#746b60);

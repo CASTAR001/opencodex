@@ -1,5 +1,8 @@
 .ocx-prompt-nav {
-  position:absolute; z-index:32; left:8px; top:56px; bottom:92px; width:26px;
+  position:absolute; z-index:32; left:8px; width:26px;
+  --pn-inset:min(18%,180px);
+  --pn-shift:clamp(calc(var(--pn-inset) / -2),var(--pn-page-offset,0px),calc(var(--pn-inset) / 2));
+  inset-block:calc(var(--pn-inset) + var(--pn-shift)) calc(var(--pn-inset) - var(--pn-shift));
   display:flex; flex-direction:column; justify-content:center; pointer-events:none;
   --pn-ink:var(--v2-text-text-base,#443d34);
   --pn-muted:var(--v2-text-text-muted,#746b60);

@@ -181,6 +181,10 @@ export function createRail({ href, jump, star, retry }) {
       if (column) waiting.disconnect()
       else waiting.observe(content,{childList:true,subtree:true})
       const room = column?.getBoundingClientRect()
+      // The title bar can put the panel's midpoint below the page's midpoint.
+      const bounds = panel.getBoundingClientRect()
+      const pageOffset = (document.documentElement.clientHeight - bounds.top - bounds.bottom) / 2
+      nav.style.setProperty('--pn-page-offset', pageOffset+'px')
       const track = nav.getBoundingClientRect()
       const hide = !room?.width || !track.width || track.right + 8 > room.left
       if (nav.inert !== hide) {
@@ -189,6 +193,7 @@ export function createRail({ href, jump, star, retry }) {
       }
       size()
     }
+    resize.observe(document.documentElement)
     resize.observe(panel)
     resize.observe(nav)
     measure()
