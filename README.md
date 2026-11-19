@@ -19,7 +19,7 @@
 | 05 | [Execution Timeline Auto Collapse](projects/execution-timeline/README.md) | 预研 |
 | 06 | [Session Metrics Monitor](projects/session-metrics/README.md) | `0.1.0-alpha.3`，本机试用 |
 | 07 | [Provider Quota Monitor](projects/provider-quota/README.md) | `0.1.0-alpha.3`，可安装。用量筛选和额度刷新与页签同排显示 |
-| 08 | [File Review Enhancer](projects/file-review-enhancer/README.md) | 预研 |
+| 08 | [File Review Enhancer](projects/file-review-enhancer/README.md) | `0.1.0-alpha.3`，从右侧文件树阅读 Markdown，支持脚注往返、原生网站图标和短链接名称 |
 | 09 | [Bilingual Fonts](projects/bilingual-fonts/README.md) | `0.1.0-alpha.1`，已通过 macOS 本机验收。界面正文和代码可分别设置中西文字体 |
 
 ## 安装验证工具
