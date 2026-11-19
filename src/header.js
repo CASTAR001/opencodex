@@ -12,7 +12,9 @@ export function header(ctx, input, useSession, open) {
   button.onclick = () => open(input.session)
 
   createEffect(() => {
-    button.hidden = !input.active
+    button.hidden = !input.active || input.compact
+  })
+  createEffect(() => {
     if (!input.active) return
     const source = useSession(input.session)
     const locale = ctx.locale.locale()
@@ -28,11 +30,11 @@ export function header(ctx, input, useSession, open) {
       const rate = estimate?.tps ?? turn?.tps
       const value = (rate == null ? '—' : number.format(rate)) + ' TPS'
       const partial = coverage !== 'complete'
-      label.textContent = t(input.compact ? 'cacheShort' : 'cacheLabel')
+      label.textContent = t('cacheLabel')
       hit.textContent = cache + (partial && ratio != null ? '*' : '')
       speed.textContent = (estimate ? '≈' : previous && turn ? t('prevShort') + ' ' : '') + value
       const used = context?.percent == null ? '—' : percent.format(context.percent / 100)
-      windowUsage.textContent = t(input.compact ? 'contextShort' : 'context') + ' ' + used
+      windowUsage.textContent = t('context') + ' ' + used
       const hint = [t('hit') + ' ' + cache, t(estimate ? 'estimated' : previous ? 'previous' : 'recent') + ' ' + value]
       hint.push(t('context') + ' ' + used + (context ? ' (' + number.format(context.used) + ' / ' + (context.limit > 0 ? number.format(context.limit) : '—') + ')' : ''))
       if (partial) hint.push(t(coverage))
