@@ -1,13 +1,15 @@
 import { Ipc, Plugin, Slot, Store, Style } from '@opencode/plugin/gui'
 import { Schema } from 'effect'
-import { createEffect, createMemo, createRoot, createSignal, onCleanup } from 'solid-js'
+import { createComponent, createEffect, createMemo, createRoot, createSignal, onCleanup } from 'solid-js'
 import { projectGroups, setFolderHidden } from './model.js'
 import { closeHelp, closeQuestion, nativeProjectRow, selectNativeClose } from './native-close.js'
+import { defaultCloseHint, isDefaultProjectPath } from './default-project.js'
 import { createTree } from './tree.js'
 import { watchSideList } from './host.js'
 import css from './tree.css'
 
 const homeDirectory = Ipc.define({id:'project-sidebar.home', state:Schema.String, methods:{}})
+const documentsDirectory = Ipc.define({id:'project-sidebar.documents', state:Schema.String, methods:{}})
 const historyEvents = new Set(['session.created','session.deleted','session.archived','session.unarchived','session.renamed','session.moved'])
 
 function serverHistory(server) {
@@ -55,14 +57,31 @@ function attach(ctx, list) {
     list.toggleAttribute('data-ocx-project-sidebar-hidden',!native)
   }
   const folders = ctx.stores.folders
-  const resolveRow = group => nativeProjectRow(list,group,ctx.servers.list().map(id=>ctx.servers.get(id)))
-  let confirming = false
-  async function closeProject(group) {
-    if (confirming) return
-    confirming = true
+  const documents = ctx.main(documentsDirectory)
+  const protectedFolder = group => ctx.servers.get(group.server)?.builtin && isDefaultProjectPath(group.path,documents.state())
+  const resolveRow = group => protectedFolder(group) ? undefined : nativeProjectRow(list,group,ctx.servers.list().map(id=>ctx.servers.get(id)))
+  let dialog, closing = false
+  function closeProject(group) {
+    const original = resolveRow(group)
+    if (!original || closing) return
+    dialog?.close()
+    const question = closeQuestion(group)
+    dialog = ctx.dialogs.open(handle => {
+      onCleanup(() => { if (dialog === handle) dialog = undefined })
+      return createComponent(ctx.ui.Dialog,{title:question.title,description:question.description,closable:false,
+        get footer() { return [
+          createComponent(ctx.ui.Button,{variant:'ghost',autofocus:true,children:question.cancel,onClick:() => handle.close()}),
+          createComponent(ctx.ui.Button,{variant:'danger',class:'ps-confirm-close',children:question.confirm,onClick:() => {
+            handle.close()
+            void finishClose(group,original)
+          }}),
+        ] }})
+    })
+  }
+  async function finishClose(group,original) {
+    if (closing || protectedFolder(group)) return
+    closing = true
     try {
-      const original = resolveRow(group)
-      if (!original || !await ctx.dialogs.confirm(closeQuestion(group))) return
       if (!list.isConnected || !await selectNativeClose(() => resolveRow(group),original)) {
         await ctx.dialogs.alert({title:'未能关闭此项目',description:closeHelp})
         return
@@ -71,10 +90,13 @@ function attach(ctx, list) {
         draft.closed = setFolderHidden(draft.closed ?? [],group.id,true)
         draft.hidden = setFolderHidden(draft.hidden,group.id,false)
       })
-    } finally { confirming = false }
+    } finally { closing = false }
   }
   const tree = createTree({open:(server,id) => ctx.tabs.open({server,id},{focus:true}),
-    closeProject, closeHint:group => resolveRow(group) ? '' : '原生列表中未找到唯一匹配项。'+closeHelp,
+    closeProject, closeHint:group => {
+      if (protectedFolder(group)) return defaultCloseHint
+      return resolveRow(group) ? '' : '原生列表中未找到唯一匹配项。'+closeHelp
+    },
     setHidden:(id,hide) => folders.update(draft => {
       draft.hidden = setFolderHidden(draft.hidden,id,hide)
     }),
@@ -139,6 +161,7 @@ function attach(ctx, list) {
     tree.update(data().groups.filter(g=>!closed.includes(g.id)),selected && {id:selected.id,server:selected.server.id},data().status,folders.value.hidden)
   })
   onCleanup(() => {
+    dialog?.close()
     for (const record of histories.values()) record.dispose()
     list.removeAttribute('data-ocx-project-sidebar-hidden')
     const focused = tree.root.contains(document.activeElement) || (showNative && document.activeElement === back)
@@ -153,6 +176,8 @@ export default Plugin.define({
   main(ctx) {
     const home = require('node:os').homedir()
     ctx.provide(homeDirectory,{state:() => home})
+    const documents = require('electron').app.getPath('documents')
+    ctx.provide(documentsDirectory,{state:() => documents})
   },
   setup(ctx) {
     ctx.add(Style,css)

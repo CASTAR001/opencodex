@@ -1,5 +1,6 @@
 import {projectGroups,setFolderHidden} from '../src/model.js'
 import {closeHelp,closeQuestion} from '../src/native-close.js'
+import {defaultCloseHint,isDefaultProjectPath} from '../src/default-project.js'
 import {createTree} from '../src/tree.js'
 
 const home = '/Users/demo'
@@ -30,6 +31,7 @@ const nativeClose = group => {
   if (!native.hidden) drawNative()
 }
 function confirmClose(group) {
+  if (isDefaultProjectPath(group.path,home+'/Documents')) return
   const options = closeQuestion(group)
   $('#close-path').textContent = options.description
   confirmation.returnValue = ''
@@ -43,6 +45,7 @@ try {
   if (Array.isArray(stored)) hidden = stored.filter(id => typeof id === 'string')
 } catch { /* Offline file previews can run without browser storage. */ }
 const tree = createTree({open:select,closeHint:group => {
+  if (isDefaultProjectPath(group.path,home+'/Documents')) return defaultCloseHint
   const leaf = group.path.split('/').pop()
   return groups().filter(g=>g.path.split('/').pop() === leaf).length === 1 ? '' : '同名项目需在原生列表关闭。'+closeHelp
 },closeProject:confirmClose,setHidden(id,hide) {

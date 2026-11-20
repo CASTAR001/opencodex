@@ -45,3 +45,7 @@
 .ps-tree .ps-menu-item { display:block }
 .ps-tree .ps-menu-item:disabled { color:var(--ps-muted); cursor:default; opacity:.62 }
 .ps-hint { max-width:228px; color:var(--ps-muted); margin:4px 9px; font-size:12px; line-height:1.45 }
+
+button.ps-confirm-close { background:#b42e38; border-color:transparent; color:#fff }
+button.ps-confirm-close:hover { background:#a02731 }
+button.ps-confirm-close:active { background:#86212a }

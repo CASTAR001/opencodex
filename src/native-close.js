@@ -62,5 +62,5 @@ export async function selectNativeClose(resolveRow, expected) {
 
 export function closeQuestion(group) {
   return {title:'关闭项目？',description:group.path+'\n将从本机 OpenCode 的已用项目列表移除。磁盘文件、会话记录和权限设置都会保留，再次打开项目即可找回。',
-    confirm:'确认关闭',cancel:'取消',danger:true}
+    confirm:'确认关闭',cancel:'取消'}
 }

@@ -187,9 +187,84 @@ function closeQuestion(group) {
     title: "\u5173\u95ED\u9879\u76EE\uFF1F",
     description: group.path + "\n\u5C06\u4ECE\u672C\u673A OpenCode \u7684\u5DF2\u7528\u9879\u76EE\u5217\u8868\u79FB\u9664\u3002\u78C1\u76D8\u6587\u4EF6\u3001\u4F1A\u8BDD\u8BB0\u5F55\u548C\u6743\u9650\u8BBE\u7F6E\u90FD\u4F1A\u4FDD\u7559\uFF0C\u518D\u6B21\u6253\u5F00\u9879\u76EE\u5373\u53EF\u627E\u56DE\u3002",
     confirm: "\u786E\u8BA4\u5173\u95ED",
-    cancel: "\u53D6\u6D88",
-    danger: true
+    cancel: "\u53D6\u6D88"
   };
+}
+
+// src/default-project.js
+var names = /* @__PURE__ */ new Set([
+  "Alap\xE9rtelmezett projekt",
+  "Bellenen taslama",
+  "Default Project",
+  "D\u1EF1 \xE1n m\u1EB7c \u0111\u1ECBnh",
+  "Noklus\u0113juma projekts",
+  "Numatytasis projektas",
+  "Oletusprojekti",
+  "Podrazumijevani projekat",
+  "Predvolen\xFD projekt",
+  "Privzeti projekt",
+  "Progetto predefinito",
+  "Proiect implicit",
+  "Projecte predeterminat",
+  "Projek Lalai",
+  "Projekt domy\u015Blny",
+  "Projekti i parazgjedhur",
+  "Projet par d\xE9faut",
+  "Projeto Padr\xE3o",
+  "Proyecto predeterminado",
+  "Proyek Bawaan",
+  "Sj\xE1lfgefi\xF0 verkefni",
+  "Standaardproject",
+  "Standardprojekt",
+  "Standardprosjekt",
+  "Standardverk\xE6tlan",
+  "Standart Layih\u0259",
+  "Standart loyiha",
+  "Vaikeprojekt",
+  "Varsay\u0131lan Proje",
+  "V\xFDchoz\xED projekt",
+  "Zadani projekt",
+  "\u03A0\u03C1\u03BF\u03B5\u03C0\u03B9\u03BB\u03B5\u03B3\u03BC\u03AD\u03BD\u03BF \u03AD\u03C1\u03B3\u03BF",
+  "\u041B\u043E\u0438\u04B3\u0430\u0438 \u043F\u0435\u0448\u0444\u0430\u0440\u0437",
+  "\u041F\u043E\u0434\u0440\u0430\u0437\u0443\u043C\u0435\u0432\u0430\u043D\u0438 \u043F\u0440\u043E\u0458\u0435\u043A\u0430\u0442",
+  "\u041F\u0440\u043E\u0435\u043A\u0442 \u043F\u043E \u043F\u043E\u0434\u0440\u0430\u0437\u0431\u0438\u0440\u0430\u043D\u0435",
+  "\u041F\u0440\u043E\u0435\u043A\u0442 \u043F\u043E \u0443\u043C\u043E\u043B\u0447\u0430\u043D\u0438\u044E",
+  "\u0421\u0442\u0430\u043D\u0434\u0430\u0440\u0434\u0435\u043D \u043F\u0440\u043E\u0435\u043A\u0442",
+  "\u0422\u0438\u043F\u043E\u0432\u0438\u0439 \u043F\u0440\u043E\u0454\u043A\u0442",
+  "\u04E8\u0433\u04E9\u0433\u0434\u043C\u04E9\u043B \u0442\u04E9\u0441\u04E9\u043B",
+  "\u053F\u0561\u0576\u056D\u0561\u0564\u0580\u057E\u0561\u056E \u0576\u0561\u056D\u0561\u0563\u056B\u056E",
+  "\u05E4\u05E8\u05D5\u05D9\u05E7\u05D8 \u05D1\u05E8\u05D9\u05E8\u05EA \u05DE\u05D7\u05D3\u05DC",
+  "\u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u0627\u0644\u0627\u0641\u062A\u0631\u0627\u0636\u064A",
+  "\u067E\u0631\u0648\u0698\u0647 \u067E\u06CC\u0634\u200C\u0641\u0631\u0636",
+  "\u0688\u06CC\u0641\u0627\u0644\u0679 \u067E\u0631\u0648\u062C\u06CC\u06A9\u0679",
+  "\u0791\u07A9\u078A\u07AF\u078D\u07B0\u0793\u07B0 \u0795\u07B0\u0783\u07AE\u0796\u07AC\u0786\u07B0\u0793\u07B0",
+  "\u0921\u093F\u092B\u093C\u0949\u0932\u094D\u091F \u092A\u094D\u0930\u094B\u091C\u0947\u0915\u094D\u091F",
+  "\u092A\u0942\u0930\u094D\u0935\u0928\u093F\u0930\u094D\u0927\u093E\u0930\u093F\u0924 \u092A\u0930\u093F\u092F\u094B\u091C\u0928\u093E",
+  "\u09A1\u09BF\u09AB\u09B2\u09CD\u099F \u09AA\u09CD\u09B0\u0995\u09B2\u09CD\u09AA",
+  "\u0DB4\u0DD9\u0DBB\u0DB1\u0DD2\u0DB8\u0DD2 \u0DC0\u0DCA\u200D\u0DBA\u0DCF\u0DB4\u0DD8\u0DAD\u0DD2\u0DBA",
+  "\u0E42\u0E1B\u0E23\u0E40\u0E08\u0E01\u0E15\u0E4C\u0E40\u0E23\u0E34\u0E48\u0E21\u0E15\u0E49\u0E19",
+  "\u0EC2\u0E84\u0E87\u0E81\u0EB2\u0E99\u0EC0\u0EA5\u0EB5\u0EC8\u0EA1\u0E95\u0EBB\u0EC9\u0E99",
+  "\u0F66\u0F94\u0F7C\u0F53\u0F0B\u0F66\u0F92\u0FB2\u0F72\u0F42\u0F0B\u0F63\u0F66\u0F0B\u0F60\u0F42\u0F74\u0F63",
+  "\u1019\u1030\u101B\u1004\u103A\u1038 \u1015\u101B\u1031\u102C\u1002\u103B\u1000\u103A",
+  "\u10DC\u10D0\u10D2\u10E3\u10DA\u10D8\u10E1\u10EE\u10DB\u10D4\u10D5\u10D8 \u10DE\u10E0\u10DD\u10D4\u10E5\u10E2\u10D8",
+  "\u1290\u1263\u122A \u1355\u122E\u1300\u12AD\u1275",
+  "\u1782\u1798\u17D2\u179A\u17C4\u1784\u179B\u17C6\u1793\u17B6\u17C6\u178A\u17BE\u1798",
+  "\u30C7\u30D5\u30A9\u30EB\u30C8\u30D7\u30ED\u30B8\u30A7\u30AF\u30C8",
+  "\u9810\u8A2D\u5C08\u6848",
+  "\u9ED8\u8BA4\u9879\u76EE",
+  "\uAE30\uBCF8 \uD504\uB85C\uC81D\uD2B8"
+]);
+var defaultCloseHint = "\u9ED8\u8BA4\u9879\u76EE\u4E0D\u80FD\u5173\u95ED\uFF0C\u53EF\u4EE5\u9690\u85CF\u3002";
+function isDefaultProjectPath(path, documents) {
+  const windows = /^(?:[A-Za-z]:|\\\\)/.test(path);
+  const normalize = (text) => (windows ? text.replaceAll("\\", "/") : text).normalize("NFC").replace(/\/+$/, "");
+  const full = normalize(path);
+  const slash = full.lastIndexOf("/");
+  if (slash < 0 || !names.has(full.slice(slash + 1))) return false;
+  if (!documents) return true;
+  const parent = full.slice(0, slash);
+  const expected = normalize(documents);
+  return windows ? parent.toLowerCase() === expected.toLowerCase() : parent === expected;
 }
 
 // src/tree.js
@@ -458,10 +533,11 @@ function watchSideList(change) {
 }
 
 // src/tree.css
-var tree_default = '[data-ocx-project-sidebar-hidden], .ps-tree[hidden], .ps-return[hidden] { display:none !important }\n.ps-tree, .ps-return {\n  --ps-ink:var(--v2-text-text-base,#44443f);\n  --ps-muted:var(--v2-text-text-muted,#75756c);\n  --ps-tint:var(--v2-overlay-simple-overlay-hover,rgba(63,56,39,.055));\n  --ps-current:var(--v2-overlay-simple-overlay-pressed,rgba(63,56,39,.083));\n  color:var(--ps-ink);\n  font:inherit;\n}\n.ps-tree { display:flex; flex:1 1 0; min-width:0; min-height:0; flex-direction:column; text-align:start; user-select:none }\n.ps-tree *, .ps-return { box-sizing:border-box }\n.ps-tree button, .ps-return { appearance:none; border:0; margin:0; background:transparent; color:inherit; font:inherit; cursor:pointer; text-align:start }\n.ps-tree svg { fill:none; stroke:currentColor; stroke-width:1.65; stroke-linecap:round; stroke-linejoin:round; height:18px; width:18px; flex:none }\n.ps-heading { height:32px; flex:none; display:flex; align-items:center; justify-content:space-between; padding:0 6px 0 10px; font-size:13px; font-weight:550; color:var(--ps-muted) }\n.ps-tree .ps-native { width:26px; height:26px; display:grid; place-items:center; border-radius:6px; opacity:.68 }\n.ps-tree .ps-native svg { width:15px; height:15px }\n.ps-list { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; padding:1px 2px 8px }\n.ps-project + .ps-project { margin-top:3px }\n.ps-tree .ps-folder, .ps-tree .ps-session, .ps-tree .ps-more, .ps-tree .ps-empty {\n  width:100%; min-width:0; height:31px; line-height:20px; border-radius:9px; font-size:14px; font-weight:400;\n}\n.ps-tree .ps-folder { display:flex; align-items:center; gap:8px; padding:0 8px; }\n.ps-path { display:flex; flex:1 1 0; min-width:0; align-items:baseline; text-align:left; unicode-bidi:isolate; overflow:hidden; white-space:nowrap }\n.ps-anchor { flex:none }\n.ps-tail { flex:1 1 auto; min-width:0; direction:rtl; text-align:left; overflow:hidden; text-overflow:ellipsis }\n.ps-server { min-width:0; max-width:30%; margin-inline-start:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ps-muted); font-size:11px }\n.ps-tree .ps-session, .ps-tree .ps-more, .ps-tree .ps-empty { display:block; align-content:center; padding:0 9px 0 35px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap }\n.ps-tree .ps-session:hover, .ps-tree .ps-folder:hover, .ps-tree .ps-more:hover, .ps-tree .ps-native:hover, .ps-return:hover { background:var(--ps-tint) }\n.ps-tree .ps-session[aria-current=page] { background:var(--ps-current) }\n.ps-tree .ps-more, .ps-tree .ps-empty, .ps-return { color:var(--ps-muted); font-size:12px }\n.ps-return { align-self:flex-start; padding:4px 9px; border-radius:6px }\n.ps-tree button:focus-visible, .ps-return:focus-visible { outline:2px solid var(--v2-border-border-focus,currentColor); outline-offset:-2px }\n\n.ps-shelf[hidden], .ps-shelf-list[hidden] { display:none }\n.ps-shelf { display:flex; flex-direction:column; min-height:0; max-height:50%; flex:0 1 auto; border-top:1px solid var(--v2-border-border-weak,rgba(120,120,110,.18)); padding-top:3px }\n.ps-shelf-list { min-height:0; overflow:auto; scrollbar-width:thin; overscroll-behavior:contain; padding:1px 2px }\n.ps-tree .ps-disclosure { display:flex; align-items:center; gap:8px; flex:none; width:100%; border-radius:7px; padding:5px 10px; color:var(--ps-muted); font-size:13px; line-height:20px }\n.ps-disclosure svg { width:14px; height:14px }\n.ps-disclosure[aria-expanded="true"] svg { transform:rotate(90deg) }\n.ps-count { margin-inline-start:auto; font-variant-numeric:tabular-nums }\n.ps-menu { position:fixed; inset:auto; margin:0; min-width:146px; max-width:calc(100vw - 8px); padding:4px; border:1px solid var(--v2-border-border-weak,rgba(120,120,110,.24)); border-radius:9px; color:var(--ps-ink); background:var(--v2-background-bg-raised,var(--v2-background-bg-base,Canvas)); box-shadow:0 4px 16px #0002; font:inherit }\n.ps-tree .ps-menu-item { width:100%; border-radius:5px; padding:5px 9px; font-size:13px; line-height:20px; text-align:start }\n.ps-tree .ps-disclosure:hover, .ps-tree .ps-menu-item:hover, .ps-tree .ps-menu-item:focus-visible { background:var(--ps-tint) }\n\n.ps-tree .ps-menu-item { display:block }\n.ps-tree .ps-menu-item:disabled { color:var(--ps-muted); cursor:default; opacity:.62 }\n.ps-hint { max-width:228px; color:var(--ps-muted); margin:4px 9px; font-size:12px; line-height:1.45 }\n';
+var tree_default = '[data-ocx-project-sidebar-hidden], .ps-tree[hidden], .ps-return[hidden] { display:none !important }\n.ps-tree, .ps-return {\n  --ps-ink:var(--v2-text-text-base,#44443f);\n  --ps-muted:var(--v2-text-text-muted,#75756c);\n  --ps-tint:var(--v2-overlay-simple-overlay-hover,rgba(63,56,39,.055));\n  --ps-current:var(--v2-overlay-simple-overlay-pressed,rgba(63,56,39,.083));\n  color:var(--ps-ink);\n  font:inherit;\n}\n.ps-tree { display:flex; flex:1 1 0; min-width:0; min-height:0; flex-direction:column; text-align:start; user-select:none }\n.ps-tree *, .ps-return { box-sizing:border-box }\n.ps-tree button, .ps-return { appearance:none; border:0; margin:0; background:transparent; color:inherit; font:inherit; cursor:pointer; text-align:start }\n.ps-tree svg { fill:none; stroke:currentColor; stroke-width:1.65; stroke-linecap:round; stroke-linejoin:round; height:18px; width:18px; flex:none }\n.ps-heading { height:32px; flex:none; display:flex; align-items:center; justify-content:space-between; padding:0 6px 0 10px; font-size:13px; font-weight:550; color:var(--ps-muted) }\n.ps-tree .ps-native { width:26px; height:26px; display:grid; place-items:center; border-radius:6px; opacity:.68 }\n.ps-tree .ps-native svg { width:15px; height:15px }\n.ps-list { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; padding:1px 2px 8px }\n.ps-project + .ps-project { margin-top:3px }\n.ps-tree .ps-folder, .ps-tree .ps-session, .ps-tree .ps-more, .ps-tree .ps-empty {\n  width:100%; min-width:0; height:31px; line-height:20px; border-radius:9px; font-size:14px; font-weight:400;\n}\n.ps-tree .ps-folder { display:flex; align-items:center; gap:8px; padding:0 8px; }\n.ps-path { display:flex; flex:1 1 0; min-width:0; align-items:baseline; text-align:left; unicode-bidi:isolate; overflow:hidden; white-space:nowrap }\n.ps-anchor { flex:none }\n.ps-tail { flex:1 1 auto; min-width:0; direction:rtl; text-align:left; overflow:hidden; text-overflow:ellipsis }\n.ps-server { min-width:0; max-width:30%; margin-inline-start:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ps-muted); font-size:11px }\n.ps-tree .ps-session, .ps-tree .ps-more, .ps-tree .ps-empty { display:block; align-content:center; padding:0 9px 0 35px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap }\n.ps-tree .ps-session:hover, .ps-tree .ps-folder:hover, .ps-tree .ps-more:hover, .ps-tree .ps-native:hover, .ps-return:hover { background:var(--ps-tint) }\n.ps-tree .ps-session[aria-current=page] { background:var(--ps-current) }\n.ps-tree .ps-more, .ps-tree .ps-empty, .ps-return { color:var(--ps-muted); font-size:12px }\n.ps-return { align-self:flex-start; padding:4px 9px; border-radius:6px }\n.ps-tree button:focus-visible, .ps-return:focus-visible { outline:2px solid var(--v2-border-border-focus,currentColor); outline-offset:-2px }\n\n.ps-shelf[hidden], .ps-shelf-list[hidden] { display:none }\n.ps-shelf { display:flex; flex-direction:column; min-height:0; max-height:50%; flex:0 1 auto; border-top:1px solid var(--v2-border-border-weak,rgba(120,120,110,.18)); padding-top:3px }\n.ps-shelf-list { min-height:0; overflow:auto; scrollbar-width:thin; overscroll-behavior:contain; padding:1px 2px }\n.ps-tree .ps-disclosure { display:flex; align-items:center; gap:8px; flex:none; width:100%; border-radius:7px; padding:5px 10px; color:var(--ps-muted); font-size:13px; line-height:20px }\n.ps-disclosure svg { width:14px; height:14px }\n.ps-disclosure[aria-expanded="true"] svg { transform:rotate(90deg) }\n.ps-count { margin-inline-start:auto; font-variant-numeric:tabular-nums }\n.ps-menu { position:fixed; inset:auto; margin:0; min-width:146px; max-width:calc(100vw - 8px); padding:4px; border:1px solid var(--v2-border-border-weak,rgba(120,120,110,.24)); border-radius:9px; color:var(--ps-ink); background:var(--v2-background-bg-raised,var(--v2-background-bg-base,Canvas)); box-shadow:0 4px 16px #0002; font:inherit }\n.ps-tree .ps-menu-item { width:100%; border-radius:5px; padding:5px 9px; font-size:13px; line-height:20px; text-align:start }\n.ps-tree .ps-disclosure:hover, .ps-tree .ps-menu-item:hover, .ps-tree .ps-menu-item:focus-visible { background:var(--ps-tint) }\n\n.ps-tree .ps-menu-item { display:block }\n.ps-tree .ps-menu-item:disabled { color:var(--ps-muted); cursor:default; opacity:.62 }\n.ps-hint { max-width:228px; color:var(--ps-muted); margin:4px 9px; font-size:12px; line-height:1.45 }\n\nbutton.ps-confirm-close { background:#b42e38; border-color:transparent; color:#fff }\nbutton.ps-confirm-close:hover { background:#a02731 }\nbutton.ps-confirm-close:active { background:#86212a }\n';
 
 // src/plugin.js
 var homeDirectory = import_gui.Ipc.define({ id: "project-sidebar.home", state: import_effect.Schema.String, methods: {} });
+var documentsDirectory = import_gui.Ipc.define({ id: "project-sidebar.documents", state: import_effect.Schema.String, methods: {} });
 var historyEvents = /* @__PURE__ */ new Set(["session.created", "session.deleted", "session.archived", "session.unarchived", "session.renamed", "session.moved"]);
 function serverHistory(server) {
   const [rows, setRows] = (0, import_solid_js.createSignal)([]);
@@ -518,14 +594,39 @@ function attach(ctx, list) {
     list.toggleAttribute("data-ocx-project-sidebar-hidden", !native);
   }
   const folders = ctx.stores.folders;
-  const resolveRow = (group) => nativeProjectRow(list, group, ctx.servers.list().map((id) => ctx.servers.get(id)));
-  let confirming = false;
-  async function closeProject(group) {
-    if (confirming) return;
-    confirming = true;
+  const documents = ctx.main(documentsDirectory);
+  const protectedFolder = (group) => ctx.servers.get(group.server)?.builtin && isDefaultProjectPath(group.path, documents.state());
+  const resolveRow = (group) => protectedFolder(group) ? void 0 : nativeProjectRow(list, group, ctx.servers.list().map((id) => ctx.servers.get(id)));
+  let dialog, closing = false;
+  function closeProject(group) {
+    const original = resolveRow(group);
+    if (!original || closing) return;
+    dialog?.close();
+    const question = closeQuestion(group);
+    dialog = ctx.dialogs.open((handle) => {
+      (0, import_solid_js.onCleanup)(() => {
+        if (dialog === handle) dialog = void 0;
+      });
+      return (0, import_solid_js.createComponent)(ctx.ui.Dialog, {
+        title: question.title,
+        description: question.description,
+        closable: false,
+        get footer() {
+          return [
+            (0, import_solid_js.createComponent)(ctx.ui.Button, { variant: "ghost", autofocus: true, children: question.cancel, onClick: () => handle.close() }),
+            (0, import_solid_js.createComponent)(ctx.ui.Button, { variant: "danger", class: "ps-confirm-close", children: question.confirm, onClick: () => {
+              handle.close();
+              void finishClose(group, original);
+            } })
+          ];
+        }
+      });
+    });
+  }
+  async function finishClose(group, original) {
+    if (closing || protectedFolder(group)) return;
+    closing = true;
     try {
-      const original = resolveRow(group);
-      if (!original || !await ctx.dialogs.confirm(closeQuestion(group))) return;
       if (!list.isConnected || !await selectNativeClose(() => resolveRow(group), original)) {
         await ctx.dialogs.alert({ title: "\u672A\u80FD\u5173\u95ED\u6B64\u9879\u76EE", description: closeHelp });
         return;
@@ -535,13 +636,16 @@ function attach(ctx, list) {
         draft.hidden = setFolderHidden(draft.hidden, group.id, false);
       });
     } finally {
-      confirming = false;
+      closing = false;
     }
   }
   const tree = createTree({
     open: (server, id) => ctx.tabs.open({ server, id }, { focus: true }),
     closeProject,
-    closeHint: (group) => resolveRow(group) ? "" : "\u539F\u751F\u5217\u8868\u4E2D\u672A\u627E\u5230\u552F\u4E00\u5339\u914D\u9879\u3002" + closeHelp,
+    closeHint: (group) => {
+      if (protectedFolder(group)) return defaultCloseHint;
+      return resolveRow(group) ? "" : "\u539F\u751F\u5217\u8868\u4E2D\u672A\u627E\u5230\u552F\u4E00\u5339\u914D\u9879\u3002" + closeHelp;
+    },
     setHidden: (id, hide) => folders.update((draft) => {
       draft.hidden = setFolderHidden(draft.hidden, id, hide);
     }),
@@ -617,6 +721,7 @@ function attach(ctx, list) {
     tree.update(data().groups.filter((g) => !closed.includes(g.id)), selected && { id: selected.id, server: selected.server.id }, data().status, folders.value.hidden);
   });
   (0, import_solid_js.onCleanup)(() => {
+    dialog?.close();
     for (const record of histories.values()) record.dispose();
     list.removeAttribute("data-ocx-project-sidebar-hidden");
     const focused = tree.root.contains(document.activeElement) || showNative && document.activeElement === back;
@@ -630,6 +735,8 @@ var plugin_default = import_gui.Plugin.define({
   main(ctx) {
     const home = require("node:os").homedir();
     ctx.provide(homeDirectory, { state: () => home });
+    const documents = require("electron").app.getPath("documents");
+    ctx.provide(documentsDirectory, { state: () => documents });
   },
   setup(ctx) {
     ctx.add(import_gui.Style, tree_default);
