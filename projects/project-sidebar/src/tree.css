@@ -17,18 +17,35 @@
 .ps-list { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; padding:1px 2px 8px }
 .ps-project + .ps-project { margin-top:3px }
 .ps-tree .ps-folder, .ps-tree .ps-session, .ps-tree .ps-more, .ps-tree .ps-empty {
-  width:100%; min-width:0; height:31px; line-height:31px; border-radius:9px; font-size:14px; font-weight:450;
+  width:100%; min-width:0; height:31px; line-height:20px; border-radius:9px; font-size:14px; font-weight:400;
 }
 .ps-tree .ps-folder { display:flex; align-items:center; gap:8px; padding:0 8px; }
-.ps-path { display:flex; min-width:0; text-align:left; unicode-bidi:isolate; line-height:normal; overflow:hidden; white-space:nowrap }
-.ps-anchor { flex:0 0 auto; max-width:45%; overflow:hidden; text-overflow:ellipsis }
-.ps-prefix { min-width:0; flex:0 1 auto; overflow:hidden; direction:rtl; text-overflow:ellipsis }
-.ps-prefix bdi { direction:ltr }
-.ps-leaf { flex:0 0 auto; max-width:55%; overflow:hidden; text-overflow:ellipsis }
+.ps-path { display:flex; flex:1 1 0; min-width:0; align-items:baseline; text-align:left; unicode-bidi:isolate; overflow:hidden; white-space:nowrap }
+.ps-anchor { flex:none }
+.ps-tail { flex:1 1 auto; min-width:0; direction:rtl; text-align:left; overflow:hidden; text-overflow:ellipsis }
 .ps-server { min-width:0; max-width:30%; margin-inline-start:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ps-muted); font-size:11px }
-.ps-tree .ps-session, .ps-tree .ps-more, .ps-tree .ps-empty { display:block; padding:0 9px 0 35px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap }
+.ps-tree .ps-session, .ps-tree .ps-more, .ps-tree .ps-empty { display:block; align-content:center; padding:0 9px 0 35px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap }
 .ps-tree .ps-session:hover, .ps-tree .ps-folder:hover, .ps-tree .ps-more:hover, .ps-tree .ps-native:hover, .ps-return:hover { background:var(--ps-tint) }
-.ps-tree .ps-session[aria-current=page] { background:var(--ps-current); font-weight:550 }
+.ps-tree .ps-session[aria-current=page] { background:var(--ps-current) }
 .ps-tree .ps-more, .ps-tree .ps-empty, .ps-return { color:var(--ps-muted); font-size:12px }
 .ps-return { align-self:flex-start; padding:4px 9px; border-radius:6px }
 .ps-tree button:focus-visible, .ps-return:focus-visible { outline:2px solid var(--v2-border-border-focus,currentColor); outline-offset:-2px }
+
+.ps-shelf[hidden], .ps-shelf-list[hidden] { display:none }
+.ps-shelf { display:flex; flex-direction:column; min-height:0; max-height:50%; flex:0 1 auto; border-top:1px solid var(--v2-border-border-weak,rgba(120,120,110,.18)); padding-top:3px }
+.ps-shelf-list { min-height:0; overflow:auto; scrollbar-width:thin; overscroll-behavior:contain; padding:1px 2px }
+.ps-tree .ps-disclosure { display:flex; align-items:center; gap:8px; flex:none; width:100%; border-radius:7px; padding:5px 10px; color:var(--ps-muted); font-size:13px; line-height:20px }
+.ps-disclosure svg { width:14px; height:14px }
+.ps-disclosure[aria-expanded="true"] svg { transform:rotate(90deg) }
+.ps-count { margin-inline-start:auto; font-variant-numeric:tabular-nums }
+.ps-menu { position:fixed; inset:auto; margin:0; min-width:146px; max-width:calc(100vw - 8px); padding:4px; border:1px solid var(--v2-border-border-weak,rgba(120,120,110,.24)); border-radius:9px; color:var(--ps-ink); background:var(--v2-background-bg-raised,var(--v2-background-bg-base,Canvas)); box-shadow:0 4px 16px #0002; font:inherit }
+.ps-tree .ps-menu-item { width:100%; border-radius:5px; padding:5px 9px; font-size:13px; line-height:20px; text-align:start }
+.ps-tree .ps-disclosure:hover, .ps-tree .ps-menu-item:hover, .ps-tree .ps-menu-item:focus-visible { background:var(--ps-tint) }
+
+.ps-tree .ps-menu-item { display:block }
+.ps-tree .ps-menu-item:disabled { color:var(--ps-muted); cursor:default; opacity:.62 }
+.ps-hint { max-width:228px; color:var(--ps-muted); margin:4px 9px; font-size:12px; line-height:1.45 }
+
+button.ps-confirm-close { background:#b42e38; border-color:transparent; color:#fff }
+button.ps-confirm-close:hover { background:#a02731 }
+button.ps-confirm-close:active { background:#86212a }

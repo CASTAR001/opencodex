@@ -22,7 +22,7 @@
 | 08 | [File Review Enhancer](projects/file-review-enhancer/README.md) | `0.1.0-alpha.3`，从右侧文件树阅读 Markdown，支持脚注往返、原生网站图标和短链接名称 |
 | 09 | [Bilingual Fonts](projects/bilingual-fonts/README.md) | `0.1.0-alpha.1`，已通过 macOS 本机验收。界面正文和代码可分别设置中西文字体 |
 | 10 | [Prompt Navigation](projects/prompt-navigation/README.md) | `0.1.0-alpha.4`，左侧刻度上下居中，支持跳转、预览和标星。长会话可悬停在渐隐刻度上浏览，左侧空间不足时自动收起 |
-| 11 | [Project Sidebar](projects/project-sidebar/README.md) | `0.1.0-alpha.1`，侧边标签页按本地目录分组显示会话，主目录缩写为 `~`，悬停可查看完整路径 |
+| 11 | [Project Sidebar](projects/project-sidebar/README.md) | `0.1.0-alpha.3`，按目录分组显示会话，支持隐藏与恢复文件夹。快捷关闭普通项目需二次确认，默认项目可隐藏并受关闭保护 |
 
 在 macOS 安装快捷导航时，将 `projects/prompt-navigation/` 下的 `package.json` 和 `gui-experimental.cjs` 放入 `~/.config/opencode/plugins/prompt-navigation/`。OpenCode Desktop 会在加载插件时自动发现它。
 

@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {displayPath,projectGroups} from '../src/model.js'
+import {displayPath,projectGroups,setFolderHidden} from '../src/model.js'
+import {isDefaultProjectPath} from '../src/default-project.js'
 
 test('only the known home prefix is abbreviated, on a directory boundary',() => {
   for (const [path,home,want] of [
@@ -29,24 +30,50 @@ test('local updates override bounded history, and children and archived sessions
   assert.equal(group.path,'/r2')
 })
 
-test('the desktop main entry supplies its exact home, without loading Node modules in the window', async () => {
+test('default-project protection matches the Desktop documents directory and onboarding names',() => {
+  const docs = '/Volume/Relocated Documents'
+  for (const name of ['默认项目','Default Project','預設專案','Projet par défaut'.normalize('NFD')]) {
+    assert.ok(isDefaultProjectPath(docs+'/'+name,docs+'/'))
+    assert.ok(!isDefaultProjectPath(docs+'/elsewhere/'+name,docs))
+  }
+  assert.ok(!isDefaultProjectPath(docs+'/默认项目-old',docs))
+  assert.ok(!isDefaultProjectPath(docs+'/默认项目/subfolder',docs))
+  assert.ok(isDefaultProjectPath('C:\\Docs\\Default Project','c:\\docs'))
+  assert.ok(isDefaultProjectPath(docs+'/默认项目',undefined))
+})
+
+test('the desktop main entry supplies home and OS documents without loading native modules in the window', async () => {
   const {readFile} = await import('node:fs/promises')
   const {runInNewContext} = await import('node:vm')
   const gui = await readFile(new URL('../gui-experimental.cjs',import.meta.url),'utf8')
   let main = false
   const context = {module:{exports:{}},require(id) {
-    if (id === '@opencode/plugin/gui') return {Ipc:{define:t=>t},Plugin:{define:t=>t}}
-    if (id === 'effect') return {Schema:{String:'string'}}
+    if (id === '@opencode/plugin/gui') return {Store:{global:()=>({})},Ipc:{define:t=>t},Plugin:{define:t=>t}}
+    if (id === 'effect') return {Schema:{String:'string',Array:()=>({}),optional:()=>({}),Struct:()=>({})}}
     if (id === 'solid-js') return {}
-    assert.ok(main && id === 'node:os')
-    return {homedir:()=>'/fixture/current-user'}
+    assert.ok(main)
+    if (id === 'node:os') return {homedir:()=>'/fixture/current-user'}
+    assert.equal(id,'electron')
+    return {app:{getPath(key) {
+      assert.equal(key,'documents')
+      return '/fixture/redirected-documents'
+    }}}
   }}
   runInNewContext(gui,context)
   main = true
-  let snapshot
+  const snapshot = {}
   context.module.exports.default.main({provide(token,impl) {
-    assert.equal(token.id,'project-sidebar.home')
-    snapshot = impl.state()
+    snapshot[token.id] = impl.state()
   }})
-  assert.equal(snapshot,'/fixture/current-user')
+  assert.deepEqual(snapshot,{'project-sidebar.home':'/fixture/current-user','project-sidebar.documents':'/fixture/redirected-documents'})
+})
+
+test('hiding and restoring one directory preserves other servers and folders',() => {
+  const key = (server,path) => JSON.stringify([server,path])
+  const folder = key('local','/work/demo')
+  const others = [key('remote','/work/demo'),key('local','/tmp/demo')]
+  const hidden = setFolderHidden(others,folder,true)
+  assert.deepEqual(setFolderHidden(hidden,folder,true),[...others,folder])
+  assert.deepEqual(setFolderHidden(hidden,folder,false),others)
+  assert.deepEqual(setFolderHidden(others,folder,false),others)
 })
