@@ -1,4 +1,4 @@
-# File Review Enhancer
+# Markdown 阅读器
 
 OpenCode Desktop 的右侧栏 Markdown 阅读插件。在右侧文件树中点开工作区里的 `.md`，原文件标签会显示阅读排版。工具栏可以切换预览与源码。「＋ → 阅读 Markdown 文件…」仍可另开阅读标签。当前原型只读。
 
@@ -12,7 +12,9 @@ OpenCode Desktop 的右侧栏 Markdown 阅读插件。在右侧文件树中点�
 
 ## 开发与验收
 
-在本仓库运行 `npm ci`、`npm run build`、`npm test`。构建目标为 OpenCode Desktop 2.3.2 的 `./gui-experimental`，服务端入口负责登记 skill。宿主升级后需要复测这两个入口。
+从源码安装时，先运行 `npm ci` 和 `npm pack`。将生成的归档解开，把其中的 `package/` 目录作为 `~/.config/opencode/plugins/file-review-enhancer/` 使用，保留 `dist/`、`src/server.js` 和 `skills/` 的相对位置。
+
+在本仓库运行 `npm ci` 和 `npm test`。测试会先构建 `dist/gui-experimental.cjs`，并验证它能在没有 DOM 的 Desktop 主进程读取。阅读器在窗口中初始化，独立的服务端入口负责登记 skill。宿主升级后需要复测这两个入口。
 
 2.3.2 的文件树直接打开内置标签，内置 Markdown 分支优先于第三方 `FileViewer`。插件从公开的 `session.panel.end` 插槽取得所属会话和文件模型，在同一右栏内匹配内置预览容器及其路径，再挂载阅读视图。文件标签、文件监听、预览／源码切换和查找由宿主负责。原生视图仍挂载在后台，长文有额外的解析和内存开销。宿主改动这些 DOM 标记时，匹配失败会显示原生预览。该适配仅验证了 2.3.2 的桌面右侧区域。
 
