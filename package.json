@@ -1,0 +1,8 @@
+{
+  "name": "plugin-labels-zh",
+  "version": "0.1.0",
+  "description": "为 OpenCode Desktop 扩展列表显示中文名称",
+  "license": "MIT",
+  "exports": { "./gui-experimental": "./gui-experimental.cjs" },
+  "files": ["gui-experimental.cjs", "README.md", "LICENSE"]
+}
