@@ -4,7 +4,7 @@ import { routeFor } from './providers.js'
 import { mediaTotals, observeMedia, officialMiniMcp } from './media.js'
 
 import { inventory, mcpFamily } from './inventory.js'
-import { withHistory, historicalMedia, mimoUsage } from './history.js'
+import { withHistory, historicalMedia } from './history.js'
 
 export default {
   id: 'provider-quota',
@@ -55,15 +55,6 @@ export default {
     }
     await ctx.rpc.register(contract, {
       inventory: configured,
-      mimo: async (range) => {
-        if (
-          !(range.from <= range.today && range.today < range.to && range.to - range.from <= 8 * 86400000)
-        )
-          throw Error('时段无效')
-        const row = (await configured()).find((v) => v.family === 'mimo')
-        if (!row?.plans.length) return { problem: '未识别到 MiMo Token Plan 连接' }
-        return withHistory(ctx.app, (db) => mimoUsage(db, range, row.plans))
-      },
       refresh: ({ family, source }, { signal }) => refresh(family, signal, source),
       media: async (range) => {
         try {

@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { DatabaseSync } from 'node:sqlite'
-import { historicalMedia, mimoUsage } from '../src/history.js'
+import { historicalMedia } from '../src/history.js'
 import { inventory, mcpFamily } from '../src/inventory.js'
 
 test('available services, plan and MCP recognition follow additions, removals and disabled state', () => {
@@ -22,7 +22,7 @@ test('available services, plan and MCP recognition follow additions, removals an
   assert.deepEqual(inventory([], []), [])
   assert.equal(mcpFamily('minimax', { disabled: true }, true), undefined)
 })
-test('historical projections include nested media and price only recognized plan data', () => {
+test('historical media counts include nested calls and exclude forks and out-of-range records', () => {
   const db = new DatabaseSync(':memory:')
   try {
     db.exec(`CREATE TABLE session_message(id,type,time_created,session_id,data);
@@ -33,8 +33,6 @@ test('historical projections include nested media and price only recognized plan
     const start = Date.UTC(2026, 10, 15),
       today = start + 86400000,
       to = today + 86400000
-    const model = { providerID: 'plan', id: 'mimo-v2.6-flash' }
-    const tokens = { input: 10, output: 1, reasoning: 2, cache: { read: 50, write: 1 } }
     const tool = (name, metadata, status = 'completed') => ({
       type: 'tool',
       name,
@@ -48,18 +46,17 @@ test('historical projections include nested media and price only recognized plan
         { tool: 'art.text_to_audio', status: 'running' },
       ],
     })
-    const add = (id, at, model, content = [], session = 's') =>
-      insert.run(id, at, session, JSON.stringify({ model, tokens, content }))
-    add('offpeak', start + 16 * 3600000, model, [nested])
-    add('peak', today + 15 * 3600000, model)
-    add('forked', today, model, [nested], 'fork')
-    add('different', today, { ...model, providerID: 'payg' })
-    add('future', to, model, [nested])
+    const add = (id, at, content, session = 's') =>
+      insert.run(id, at, session, JSON.stringify({ content }))
+    add('nested', start, [nested])
+    add('direct', today, [])
+    add('forked', today, [nested], 'fork')
+    add('future', to, [nested])
     db.prepare("INSERT INTO session_part VALUES (?,'tool',?)").run(
-      'peak',
+      'direct',
       JSON.stringify(tool('art.text_to_image', {})),
     )
-    const span = { from: start, today, to }
+    const span = { from: start, to }
     assert.deepEqual(
       historicalMedia(db, span, ['art']).map((r) => [r.calls, r.failed]),
       [
@@ -67,17 +64,6 @@ test('historical projections include nested media and price only recognized plan
         [1, 0],
       ],
     )
-    const ratio = (1800 / 11_000_000_000) * 100
-    let result = mimoUsage(db, span, ['plan'])
-    assert.equal(result.today.percent, ratio)
-    assert.equal(result.week.percent, ((1800 + 1440) / 11_000_000_000) * 100)
-    assert.equal(result.week.partial, false)
-    add('unpriced', start, { ...model, id: 'unpriced' })
-    result = mimoUsage(db, span, ['plan'])
-    assert.equal(result.week.partial, true)
-    assert.equal(result.today.partial, false)
-    assert.equal(mimoUsage(db, span, ['other']).week.percent, 0)
-    assert.ok(mimoUsage(db, span, []).problem)
   } finally {
     db.close()
   }

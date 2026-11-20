@@ -35,7 +35,6 @@ var families = {
   qwen: "Qwen \xB7 \u767E\u70BC"
 };
 var unavailable = {
-  mimo: "MiMo \u4EC5\u6839\u636E\u672C\u5730\u8BB0\u5F55\u4F30\u7B97 Standard \u6708\u989D\u5EA6\u5360\u6BD4\u3002",
   qwen: "\u666E\u901A\u767E\u70BC\u63A8\u7406 Key \u65E0\u6CD5\u67E5\u8BE2\u963F\u91CC\u4E91\u8D26\u6237\u4F59\u989D\u3002\u6A21\u578B\u6D88\u8017\u89C1\u7528\u91CF\u9875\u3002"
 };
 var object = (properties, required) => ({
@@ -49,13 +48,6 @@ var contract = {
   events: {},
   methods: {
     inventory: { input: object({}, []), output: { type: "array", items: { type: "object" } } },
-    mimo: {
-      input: object(
-        Object.fromEntries(["from", "today", "to"].map((k) => [k, { type: "integer", minimum: 0 }])),
-        ["from", "today", "to"]
-      ),
-      output: { type: "object" }
-    },
     refresh: {
       input: object(
         { family: { enum: Object.keys(families) }, source: { type: "string", maxLength: 256 } },
@@ -183,7 +175,6 @@ var style_default = `.pq-page {
 .pq-top {
   justify-content: space-between;
 }
-.pq-card > h3:first-child { margin-block-start: 0; }
 .pq-top h3 {
   margin: 0;
 }
@@ -243,6 +234,11 @@ var number = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 2 });
 var fmt = (n) => Number.isFinite(n) ? number.format(n) : "\u2014";
 var quotaNumber = new Intl.NumberFormat("zh-CN", { maximumSignificantDigits: 21 });
 function remainingText(row) {
+  if (row.unit === "Credits") {
+    if (!(row.total > 0)) return "\u5269\u4F59 " + quotaNumber.format(row.remaining) + " Credits";
+    const percent2 = row.remaining / row.total * 100;
+    return "\u5269\u4F59 " + (percent2 > 0 && percent2 < 0.01 ? "<0.01" : fmt(percent2)) + "%";
+  }
   if (row.unit && row.unit !== "%") {
     return row.remaining != null ? quotaNumber.format(row.remaining) + " " + row.unit : "\u672A\u8FD4\u56DE\u4F59\u989D";
   }
@@ -364,46 +360,19 @@ function dashboard(ctx, session) {
     select.onchange = () => change(select.value);
     return select;
   }
-  let configured = [], discovered = false, inventorySerial = 0, mimo;
+  let configured = [], discovered = false, inventorySerial = 0;
   const has = (id) => configured.some((row) => row.family === id);
   const options = () => configured.map((row) => [row.family, families[row.family]]);
-  function mimoCard() {
-    const card = el("section", null, "pq-card");
-    const quota = index === "quota";
-    const caption = quota ? "\u4EC5\u6263\u9664\u6240\u5217\u65F6\u6BB5\u7528\u91CF\u540E\u7684\u6708\u989D\u5EA6\u5360\u6BD4" : "\u6240\u5217\u65F6\u6BB5\u7528\u91CF\u5360\u6708\u989D\u5EA6\u7684\u6BD4\u4F8B";
-    card.append(el("h3", "\u5C0F\u7C73 MiMo \xB7 Standard"), el("small", "\xA599/\u6708 \xB7 110 \u4EBF Credits \xB7 \u672C\u673A\u4F30\u7B97 \xB7 " + caption));
-    for (const [key, label] of [
-      ["today", "\u4ECA\u5929"],
-      ["week", "\u8FD1 7 \u5929"]
-    ]) {
-      const reading = mimo?.[key];
-      const n = reading?.percent;
-      const display = quota ? 100 - n : n;
-      const value = Number.isFinite(n) ? display > 0 && display < 0.01 ? "<0.01%" : fmt(display) + "%" : "\u2014";
-      card.append(
-        el("div", label + (quota ? "\u3000\u5269\u4F59 " : "\u3000") + value + (reading?.partial ? "\uFF08\u90E8\u5206\u8BB0\u5F55\u7F3A\u5C11\u53EF\u6362\u7B97\u7528\u91CF\uFF09" : ""))
-      );
-    }
-    if (mimo?.problem) card.append(el("small", mimo.problem));
-    return card;
-  }
   function drawUsage() {
     if (!discovered || !configured.length || index !== "usage") return;
-    const general = configured.filter((r) => r.family !== "mimo" && (!filter || r.family === filter));
-    const period = controls.querySelector('[aria-label="\u7EDF\u8BA1\u65F6\u6BB5"]');
-    if (period) period.hidden = !general.length;
-    const nodes = [];
-    if (general.length && stats)
-      nodes.push(
-        usageView(
-          stats,
-          media,
-          general.flatMap((r) => r.providers),
-          general.some((r) => r.family === "minimax")
-        )
-      );
-    if (has("mimo") && (!filter || filter === "mimo")) nodes.push(mimoCard());
-    content.replaceChildren(...nodes);
+    if (!stats) return;
+    const selected = configured.filter((row) => !filter || row.family === filter);
+    content.replaceChildren(usageView(
+      stats,
+      media,
+      selected.flatMap((row) => row.providers),
+      selected.some((row) => row.family === "minimax")
+    ));
   }
   async function discover() {
     if (!alive || document.hidden) return;
@@ -420,42 +389,33 @@ function dashboard(ctx, session) {
       const changedAccounts = list.filter((row) => JSON.stringify(configured.find((previous) => previous.family === row.family)) !== JSON.stringify(row));
       configured = list;
       if (!has(filter)) filter = "";
-      stats = media = mimo = lastRead = void 0;
+      stats = media = lastRead = void 0;
       switchTo(index, changedAccounts);
     } catch {
       if (alive && ticket === inventorySerial) status.textContent = "\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6\u5F53\u524D\u670D\u52A1\u5546\u914D\u7F6E\u3002";
     }
   }
   async function readUsage() {
-    if (!alive || !discovered || !configured.length || document.hidden || active) return;
+    if (!alive || index !== "usage" || !discovered || !configured.length || document.hidden || active) return;
     const token = ++serial, controller = new AbortController();
     active = controller;
-    const now = /* @__PURE__ */ new Date(), span = range(days, now), week = range(7, now);
-    const general = index === "usage" && configured.some((r) => r.family !== "mimo");
+    const span = range(days);
     const readOptions = { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15e3)]) };
     const local = { ...readOptions, location };
     try {
-      const [data, calls, estimate] = await Promise.allSettled([
-        general && client.experimental.session.stats(
-          {
-            ...span,
-            from: span.from || void 0,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-            tools: "none"
-          },
+      const [data, calls] = await Promise.allSettled([
+        client.experimental.session.stats(
+          { ...span, from: span.from || void 0, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", tools: "none" },
           readOptions
         ),
-        general && has("minimax") && api.media(span, local),
-        has("mimo") && api.mimo({ ...week, today: range(1, now).from }, local)
+        has("minimax") && api.media(span, local)
       ]);
       if (!alive || token !== serial) return;
       media = calls.status === "fulfilled" ? calls.value : void 0;
-      mimo = estimate.status === "fulfilled" ? estimate.value : { problem: "\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6\u672C\u673A\u7528\u91CF" };
-      if (data.status === "fulfilled" && general) stats = data.value;
-      if (index === "usage") drawUsage();
-      else drawQuotas();
+      if (data.status === "fulfilled") stats = data.value;
+      drawUsage();
       if (data.status === "rejected") status.textContent = "\u6682\u65F6\u65E0\u6CD5\u8BFB\u53D6\u6A21\u578B\u7EDF\u8BA1\u3002";
-      else if (index === "usage") {
+      else {
         lastRead = Date.now();
         status.textContent = "\u5F53\u524D\u670D\u52A1\u5668 \xB7 \u6240\u6709\u9879\u76EE \xB7 \u66F4\u65B0\u4E8E " + time(lastRead);
       }
@@ -466,7 +426,6 @@ function dashboard(ctx, session) {
   function drawQuotas() {
     if (!alive || index !== "quota") return;
     const cards = options().map(([id, name]) => {
-      if (id === "mimo") return mimoCard();
       const card = el("section", null, "pq-card"), top = el("div", null, "pq-top");
       top.append(el("h3", name));
       if (!unavailable[id]) {
@@ -480,7 +439,7 @@ function dashboard(ctx, session) {
       if (!entries) card.append(el("p", unavailable[id] || (busy.has(id) ? "\u6B63\u5728\u67E5\u8BE2\u989D\u5EA6\u2026" : "\u7B49\u5F85\u67E5\u8BE2"), "pq-muted"));
       for (const entry of entries || []) {
         for (const row of entry.values || []) {
-          const reset = row.reset ? "\u3000\u91CD\u7F6E " + time(row.reset) : "";
+          const reset = row.endsAt ? "\u3000\u5468\u671F\u7ED3\u675F " + time(row.endsAt) : row.reset ? "\u3000\u91CD\u7F6E " + time(row.reset) : "";
           card.append(el("div", row.label + "\u3000" + remainingText(row) + reset));
         }
         if (entry.problem) card.append(el("p", entry.problem, "pq-muted"));
@@ -564,13 +523,13 @@ function dashboard(ctx, session) {
         })
       );
       drawUsage();
+      void readUsage();
+      clock = setInterval(readUsage, 6e4);
     } else {
       controls.append(btn("\u5237\u65B0\u5168\u90E8\u989D\u5EA6", () => Promise.all(configured.map((r) => refresh(r.family)))));
       drawQuotas();
       for (const row of refreshAccounts) void refresh(row.family);
     }
-    void readUsage();
-    clock = setInterval(readUsage, 6e4);
   }
   const visible = () => {
     void discover();
@@ -589,7 +548,7 @@ function dashboard(ctx, session) {
       "server.connected"
     ].includes(name))
       void discover();
-    if (document.hidden || queued || ![
+    if (index !== "usage" || document.hidden || queued || ![
       "session.step.ended",
       "session.step.failed",
       "session.compaction.ended",
