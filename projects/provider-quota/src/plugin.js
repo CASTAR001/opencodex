@@ -8,6 +8,11 @@ const fmt = (n) => (Number.isFinite(n) ? number.format(n) : '—')
 const quotaNumber = new Intl.NumberFormat('zh-CN', { maximumSignificantDigits: 21 })
 // Format on display only. A supplied remaining percentage takes precedence over counters.
 function remainingText(row) {
+  if (row.unit === 'Credits') {
+    if (!(row.total > 0)) return '剩余 ' + quotaNumber.format(row.remaining) + ' Credits'
+    const percent = row.remaining / row.total * 100
+    return '剩余 ' + (percent > 0 && percent < 0.01 ? '<0.01' : fmt(percent)) + '%'
+  }
   if (row.unit && row.unit !== '%') {
     return row.remaining != null ? quotaNumber.format(row.remaining) + ' ' + row.unit : '未返回余额'
   }
@@ -152,47 +157,16 @@ function dashboard(ctx, session) {
   }
   let configured = [],
     discovered = false,
-    inventorySerial = 0,
-    mimo
+    inventorySerial = 0
   const has = (id) => configured.some((row) => row.family === id)
   const options = () => configured.map((row) => [row.family, families[row.family]])
-  function mimoCard() {
-    const card = el('section', null, 'pq-card')
-    const quota = index === 'quota'
-    const caption = quota ? '仅扣除所列时段用量后的月额度占比' : '所列时段用量占月额度的比例'
-    card.append(el('h3', '小米 MiMo · Standard'), el('small', '¥99/月 · 110 亿 Credits · 本机估算 · ' + caption))
-    for (const [key, label] of [
-      ['today', '今天'],
-      ['week', '近 7 天'],
-    ]) {
-      const reading = mimo?.[key]
-      const n = reading?.percent
-      const display = quota ? 100 - n : n
-      const value = Number.isFinite(n) ? (display > 0 && display < 0.01 ? '<0.01%' : fmt(display) + '%') : '—'
-      card.append(
-        el('div', label + (quota ? '　剩余 ' : '　') + value + (reading?.partial ? '（部分记录缺少可换算用量）' : '')),
-      )
-    }
-    if (mimo?.problem) card.append(el('small', mimo.problem))
-    return card
-  }
   function drawUsage() {
     if (!discovered || !configured.length || index !== 'usage') return
-    const general = configured.filter((r) => r.family !== 'mimo' && (!filter || r.family === filter))
-    const period = controls.querySelector('[aria-label="统计时段"]')
-    if (period) period.hidden = !general.length
-    const nodes = []
-    if (general.length && stats)
-      nodes.push(
-        usageView(
-          stats,
-          media,
-          general.flatMap((r) => r.providers),
-          general.some((r) => r.family === 'minimax'),
-        ),
-      )
-    if (has('mimo') && (!filter || filter === 'mimo')) nodes.push(mimoCard())
-    content.replaceChildren(...nodes)
+    if (!stats) return
+    const selected = configured.filter(row => !filter || row.family === filter)
+    content.replaceChildren(usageView(
+      stats, media, selected.flatMap(row => row.providers), selected.some(row => row.family === 'minimax'),
+    ))
   }
   async function discover() {
     if (!alive || document.hidden) return
@@ -210,46 +184,34 @@ function dashboard(ctx, session) {
         JSON.stringify(configured.find(previous => previous.family === row.family)) !== JSON.stringify(row))
       configured = list
       if (!has(filter)) filter = ''
-      stats = media = mimo = lastRead = undefined
+      stats = media = lastRead = undefined
       switchTo(index, changedAccounts)
     } catch {
       if (alive && ticket === inventorySerial) status.textContent = '暂时无法读取当前服务商配置。'
     }
   }
   async function readUsage() {
-    if (!alive || !discovered || !configured.length || document.hidden || active) return
+    if (!alive || index !== 'usage' || !discovered || !configured.length || document.hidden || active) return
     const token = ++serial,
       controller = new AbortController()
     active = controller
-    const now = new Date(),
-      span = range(days, now),
-      week = range(7, now)
-    const general = index === 'usage' && configured.some((r) => r.family !== 'mimo')
+    const span = range(days)
     const readOptions = { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) }
     const local = { ...readOptions, location }
     try {
-      const [data, calls, estimate] = await Promise.allSettled([
-        general &&
-          client.experimental.session.stats(
-            {
-              ...span,
-              from: span.from || undefined,
-              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-              tools: 'none',
-            },
-            readOptions,
-          ),
-        general && has('minimax') && api.media(span, local),
-        has('mimo') && api.mimo({ ...week, today: range(1, now).from }, local),
+      const [data, calls] = await Promise.allSettled([
+        client.experimental.session.stats(
+          { ...span, from: span.from || undefined, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', tools: 'none' },
+          readOptions,
+        ),
+        has('minimax') && api.media(span, local),
       ])
       if (!alive || token !== serial) return
       media = calls.status === 'fulfilled' ? calls.value : undefined
-      mimo = estimate.status === 'fulfilled' ? estimate.value : { problem: '暂时无法读取本机用量' }
-      if (data.status === 'fulfilled' && general) stats = data.value
-      if (index === 'usage') drawUsage()
-      else drawQuotas()
+      if (data.status === 'fulfilled') stats = data.value
+      drawUsage()
       if (data.status === 'rejected') status.textContent = '暂时无法读取模型统计。'
-      else if (index === 'usage') {
+      else {
         lastRead = Date.now()
         status.textContent = '当前服务器 · 所有项目 · 更新于 ' + time(lastRead)
       }
@@ -260,7 +222,6 @@ function dashboard(ctx, session) {
   function drawQuotas() {
     if (!alive || index !== 'quota') return
     const cards = options().map(([id, name]) => {
-      if (id === 'mimo') return mimoCard()
       const card = el('section', null, 'pq-card'),
         top = el('div', null, 'pq-top')
       top.append(el('h3', name))
@@ -275,7 +236,7 @@ function dashboard(ctx, session) {
       if (!entries) card.append(el('p', unavailable[id] || (busy.has(id) ? '正在查询额度…' : '等待查询'), 'pq-muted'))
       for (const entry of entries || []) {
         for (const row of entry.values || []) {
-          const reset = row.reset ? '　重置 ' + time(row.reset) : ''
+          const reset = row.endsAt ? '　周期结束 ' + time(row.endsAt) : row.reset ? '　重置 ' + time(row.reset) : ''
           card.append(el('div', row.label + '　' + remainingText(row) + reset))
         }
         if (entry.problem) card.append(el('p', entry.problem, 'pq-muted'))
@@ -361,13 +322,13 @@ function dashboard(ctx, session) {
         }),
       )
       drawUsage()
+      void readUsage()
+      clock = setInterval(readUsage, 60000)
     } else {
       controls.append(btn('刷新全部额度', () => Promise.all(configured.map((r) => refresh(r.family)))))
       drawQuotas()
       for (const row of refreshAccounts) void refresh(row.family)
     }
-    void readUsage()
-    clock = setInterval(readUsage, 60000)
   }
   const visible = () => {
     void discover()
@@ -389,7 +350,7 @@ function dashboard(ctx, session) {
     )
       void discover()
     if (
-      document.hidden ||
+      index !== 'usage' || document.hidden ||
       queued ||
       ![
         'session.step.ended',

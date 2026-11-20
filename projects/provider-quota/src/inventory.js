@@ -50,12 +50,7 @@ export function inventory(providers, servers) {
     if (!family) continue
     const item = add(family)
     item.providers.push(p.id)
-    if (
-      family === 'mimo' &&
-      (url
-        ? /^token-plan(?:-[a-z0-9-]+)?\.xiaomimimo\.com$/.test(hostname(url))
-        : /(?:token|coding)[- ]?plan/i.test([p.id, p.name, p.canonical].join(' ')))
-    )
+    if (family === 'mimo' && routeFor(p.id, url, p.canonical)?.family === 'mimo')
       item.plans.push(p.id)
   }
   for (const { name, family } of servers) if (family) add(family).mcp.push(name)

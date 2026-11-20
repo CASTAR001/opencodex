@@ -1,5 +1,6 @@
 // Regions are fixed destinations. A custom inference proxy never becomes a quota endpoint.
 const routes = {
+  'token-plan-cn.xiaomimimo.com': ['mimo', 'mimo-plan', 'https://token-plan-cn.xiaomimimo.com/v1/platform/token_plan'],
   'api.deepseek.com': ['deepseek', 'balance', 'https://api.deepseek.com/user/balance'],
   'api.moonshot.cn': ['kimi', 'moon', 'https://api.moonshot.cn/v1/users/me/balance', 'CNY'],
   'api.moonshot.ai': ['kimi', 'moon', 'https://api.moonshot.ai/v1/users/me/balance', 'USD'],
@@ -13,6 +14,7 @@ const routes = {
   'api.minimax.chat': ['minimax', 'mini', 'https://www.minimax.io/v1/token_plan/remains', 'INTL'],
 }
 const defaults = {
+  'xiaomi-token-plan-cn': 'token-plan-cn.xiaomimimo.com',
   deepseek: 'api.deepseek.com',
   moonshotai: 'api.moonshot.ai',
   'moonshotai-cn': 'api.moonshot.cn',
@@ -28,8 +30,9 @@ const defaults = {
   'minimax-coding-plan': 'api.minimax.io',
   'minimax-cn-coding-plan': 'api.minimaxi.com',
 }
-export function routeFor(id, base) {
-  let host = Object.hasOwn(defaults, id) ? defaults[id] : undefined
+export function routeFor(id, base, canonical) {
+  const provider = canonical === 'xiaomi-token-plan-cn' ? canonical : id
+  let host = Object.hasOwn(defaults, provider) ? defaults[provider] : undefined
   if (base != null && base !== '') {
     let url
     try {
@@ -147,6 +150,15 @@ export function parseQuota(route, body, now) {
   if (route.kind === 'moon')
     return windowRow('可用余额', numeric(body.data?.available_balance), null, route.region)
   if (route.kind === 'coding') return kimiWindows(body)
+  if (route.kind === 'mimo-plan') {
+    const remaining = numeric(body.quota?.remaining_credits)
+    if (remaining == null) return []
+    // The provider's timezone-less "YYYY-MM-DD HH:mm:ss" is specified in UTC.
+    const end = body.period?.end_at
+    const endsAt = typeof end === 'string'
+      ? date(end.replace(/^(\d{4}-\d\d-\d\d)[ T](\d\d:\d\d:\d\d)$/, '$1T$2Z')) : undefined
+    return [{ label: '本期', remaining, total: numeric(body.quota?.total_credits), unit: 'Credits', endsAt }]
+  }
   if (route.kind === 'glm')
     return (body.data?.limits || []).flatMap((item) => {
       const used = numeric(item.percentage)

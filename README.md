@@ -18,7 +18,7 @@
 | 04 | [Compact 自动折叠](projects/compact-auto-collapse/README.md) | 随 05 完成试验，已作学习存档 |
 | 05 | [任务执行过程折叠](projects/execution-timeline/README.md) | 插件与前端补丁已作学习存档，独立试用版已退役 |
 | 06 | [缓存与生成速度监控](projects/session-metrics/README.md) | `0.1.0-alpha.4` · 实时缓存命中率、TPS 和上下文占用，窄窗口自动隐藏 |
-| 07 | [用量与剩余额度](projects/provider-quota/README.md) | `0.1.0-alpha.5` · 钱包入口默认打开剩余额度，进入时查询；用量统计持续记录 |
+| 07 | [用量与剩余额度](projects/provider-quota/README.md) | `0.1.0-alpha.6` · 点钱包自动查询剩余额度。MiMo 中国区个人 Token Plan 已支持官方余量查询，用量页可看实际记录的 Token |
 | 08 | [Markdown 阅读器](projects/file-review-enhancer/README.md) | `0.1.0-alpha.5` · 从右侧文件树阅读，支持脚注往返、可读链接和公式。文字表格随栏宽换行，宽表可在表格内横移 |
 | 09 | [中英文字体](projects/bilingual-fonts/README.md) | `0.1.0-alpha.1` · 分别设置中西文字体，偏好保存在本机 |
 | 10 | [提示词快捷导航](projects/prompt-navigation/README.md) | `0.1.0-alpha.4` · 左侧提示词刻度、标星与跳转，支持长对话 |

@@ -7,7 +7,6 @@ export const families = {
   qwen: 'Qwen · 百炼',
 }
 export const unavailable = {
-  mimo: 'MiMo 仅根据本地记录估算 Standard 月额度占比。',
   qwen: '普通百炼推理 Key 无法查询阿里云账户余额。模型消耗见用量页。',
 }
 const object = (properties, required) => ({
@@ -21,13 +20,6 @@ export const contract = {
   events: {},
   methods: {
     inventory: { input: object({}, []), output: { type: 'array', items: { type: 'object' } } },
-    mimo: {
-      input: object(
-        Object.fromEntries(['from', 'today', 'to'].map((k) => [k, { type: 'integer', minimum: 0 }])),
-        ['from', 'today', 'to'],
-      ),
-      output: { type: 'object' },
-    },
     refresh: {
       input: object(
         { family: { enum: Object.keys(families) }, source: { type: 'string', maxLength: 256 } },

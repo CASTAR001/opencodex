@@ -33,6 +33,8 @@ export function quotaService(ctx, mcpAccounts, request = fetch, clock = Date.now
   async function read(account, key, signal) {
     const { route } = account
     if (!key) return { problem: '未找到可用的 API Key' }
+    if (route.kind === 'mimo-plan' && !key.startsWith('tp-'))
+      return { problem: '请使用 MiMo 个人 Token Plan 专属密钥（tp-）。' }
     const id = route.endpoint + ' ' + createHash('sha256').update(key).digest('hex')
     if (pending.has(id)) return pending.get(id)
     const recent = cooldown.get(id)
@@ -83,13 +85,15 @@ export function quotaService(ctx, mcpAccounts, request = fetch, clock = Date.now
     const { data } = await ctx.provider.list()
     const accounts = []
     for (const p of data) {
-      const route = routeFor(p.id, p.settings?.baseURL)
+      const route = routeFor(p.id, p.settings?.baseURL, p.canonical)
       if (route?.family === family && p.activation !== 'disabled')
         accounts.push({ route, source: p.id, key: () => providerKey(ctx, p) })
     }
     if (family === 'minimax') accounts.push(...mcpAccounts())
     const selected = source ? accounts.filter((a) => a.source === source) : accounts
-    if (!selected.length) return [{ problem: '当前工作区没有可用于该额度接口的官方 API 连接' }]
+    if (!selected.length) return [{ problem: family === 'mimo'
+      ? '当前工作区没有可查询的 MiMo 中国区个人 Token Plan 连接。'
+      : '当前工作区没有可用于该额度接口的官方 API 连接' }]
     const resolved = await Promise.all(
       selected.map(async (account) => {
         let key
