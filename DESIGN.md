@@ -26,7 +26,8 @@ git clone --single-branch --branch plugins/code-block-enhancer https://github.co
 | file-review-enhancer | 08 · 文件审阅缺口。第四批 |
 | bilingual-fonts | 09 · 独立的中西文字体设置页。初始跟随 OpenCode，用户选择保存在本机。 |
 | prompt-navigation | 10 · 按消息 ID 导航到用户提示，追加提示各有刻度。星标按会话保存，历史分页与跳转交给原生时间线。 |
-| project-sidebar | 11 · 侧边标签页按项目目录组织会话，使用宿主标签接口打开会话。侧栏保留切回原生列表的入口。 |
+| project-sidebar | 11 · 已弃用，项目分组交给侧边标签页的原生界面。保留最后版本供复核。 |
+| plugin-labels-zh | 12 · 扩展列表使用中文显示名。控件、配置、错误报告与重新加载继续使用宿主插件 ID。 |
 
 ## 消息渲染分工
 

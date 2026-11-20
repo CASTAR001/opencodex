@@ -1,7 +1,7 @@
 import { build } from 'esbuild'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-const result = await build({ entryPoints: ['src/plugin.js'], outfile: 'dist/gui-experimental.cjs', bundle: true,
+const result = await build({ entryPoints: ['src/entry.js'], outfile: 'dist/gui-experimental.cjs', bundle: true,
   format: 'cjs', platform: 'browser', target: 'es2022', external: ['solid-js', 'solid-js/web', '@opencode/plugin/gui'],
   loader: { '.css': 'text' }, legalComments: 'inline', metafile: true })
 const packages = new Set(Object.keys(result.metafile.inputs).filter(p => p.startsWith('node_modules/')).map(p => p.split('/')[1]))

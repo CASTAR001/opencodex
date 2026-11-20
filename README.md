@@ -1,6 +1,6 @@
 # OpenCodex · OpenCode Desktop 插件合集
 
-面向 macOS OpenCode Desktop 2.3.2 的模块化界面增强项目。代码块插件 02 为会话和右侧 Markdown 文件提供限高滚动、逐块行号与换行，并支持补丁的片段阅读与增删对照。会话统计插件 06 在会话顶栏显示缓存命中率、跨模型实时 TPS 和上下文使用率，点击读数可打开明细。顶栏空间不足时自动隐藏读数。
+面向 macOS OpenCode Desktop 2.3.2 的模块化 UI 插件合集。可以按需安装代码阅读、文件阅读、会话导航、字体和用量监控组件。扩展列表的中文名称由独立插件提供，支持切换主题，悬停可查看原插件 ID。
 
 - [功能需求与开发顺序](REQUIREMENTS.md)
 - [逐项可行性与源码依据](FEASIBILITY.md)
@@ -13,18 +13,19 @@
 
 | 编号 | 组件 | 当前状态 |
 |---|---|---|
-| 02 | [Code Block Enhancer](projects/code-block-enhancer/README.md) | `0.1.0-alpha.8`，Diff 默认展示修改后的片段，± 切换增删对照，复制保留完整补丁 |
-| 03 | [Markdown Presentation Enhancer](projects/markdown-presentation/README.md) | 预研 |
-| 04 | [Compact Auto Collapse](projects/compact-auto-collapse/README.md) | 预研 |
-| 05 | [Execution Timeline Auto Collapse](projects/execution-timeline/README.md) | 预研 |
-| 06 | [Session Metrics Monitor](projects/session-metrics/README.md) | `0.1.0-alpha.4`，已通过本机验收，顶栏收窄时隐藏读数，恢复后继续显示 |
-| 07 | [Provider Quota Monitor](projects/provider-quota/README.md) | `0.1.0-alpha.5`，已通过本机验收，从钱包查看剩余额度及用量，新建对话也可打开 |
-| 08 | [File Review Enhancer](projects/file-review-enhancer/README.md) | `0.1.0-alpha.3`，从右侧文件树阅读 Markdown，支持脚注往返、原生网站图标和短链接名称 |
-| 09 | [Bilingual Fonts](projects/bilingual-fonts/README.md) | `0.1.0-alpha.1`，已通过 macOS 本机验收。界面正文和代码可分别设置中西文字体 |
-| 10 | [Prompt Navigation](projects/prompt-navigation/README.md) | `0.1.0-alpha.4`，左侧刻度上下居中，支持跳转、预览和标星。长会话可悬停在渐隐刻度上浏览，左侧空间不足时自动收起 |
-| 11 | [Project Sidebar](projects/project-sidebar/README.md) | `0.1.0-alpha.3`，按目录分组显示会话，支持隐藏与恢复文件夹。快捷关闭普通项目需二次确认，默认项目可隐藏并受关闭保护 |
+| 02 | [代码块增强](projects/code-block-enhancer/README.md) | `0.1.0-alpha.8` · 限高滚动、行号、换行、Diff 对照与复制 |
+| 03 | [对话 Markdown 排版](projects/markdown-presentation/README.md) | 暂缓。右侧文件阅读见 08 |
+| 04 | [Compact 自动折叠](projects/compact-auto-collapse/README.md) | 随 05 完成试验，已作学习存档 |
+| 05 | [任务执行过程折叠](projects/execution-timeline/README.md) | 插件与前端补丁已作学习存档，独立试用版已退役 |
+| 06 | [缓存与生成速度监控](projects/session-metrics/README.md) | `0.1.0-alpha.4` · 实时缓存命中率、TPS 和上下文占用，窄窗口自动隐藏 |
+| 07 | [用量与剩余额度](projects/provider-quota/README.md) | `0.1.0-alpha.5` · 钱包入口默认打开剩余额度，进入时查询；用量统计持续记录 |
+| 08 | [Markdown 阅读器](projects/file-review-enhancer/README.md) | `0.1.0-alpha.4` · 从右侧文件树阅读，支持脚注往返、可读链接、表格和公式。已修复桌面加载报错 |
+| 09 | [中英文字体](projects/bilingual-fonts/README.md) | `0.1.0-alpha.1` · 分别设置中西文字体，偏好保存在本机 |
+| 10 | [提示词快捷导航](projects/prompt-navigation/README.md) | `0.1.0-alpha.4` · 左侧提示词刻度、标星与跳转，支持长对话 |
+| 11 | [项目文件夹整理](projects/project-sidebar/README.md) | **已弃用** · 最后版本 `0.1.0-alpha.3`。侧边标签页使用 OpenCode 原生项目分组 |
+| 12 | [插件中文名称](projects/plugin-labels-zh/README.md) | `0.1.0` · 在本机扩展列表显示中文名，保留原插件 ID 和原生操作 |
 
-在 macOS 安装快捷导航时，将 `projects/prompt-navigation/` 下的 `package.json` 和 `gui-experimental.cjs` 放入 `~/.config/opencode/plugins/prompt-navigation/`。OpenCode Desktop 会在加载插件时自动发现它。
+安装方式见各组件的 README。使用 12 时，将其 `package.json` 和 `gui-experimental.cjs` 放到 `~/.config/opencode/plugins/plugin-labels-zh/`。08 还包含服务端入口和随包技能，需按该组件的说明构建并保留包内目录结构。
 
 ## 安装验证工具
 

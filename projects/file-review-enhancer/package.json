@@ -1,6 +1,6 @@
 {
   "name": "file-review-enhancer",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "license": "MIT",
   "type": "module",
   "exports": {
@@ -16,6 +16,7 @@
   ],
   "scripts": {
     "build": "node build.mjs",
+    "pretest": "npm run build",
     "test": "node --test test/*.test.mjs",
     "prepack": "npm run build"
   },

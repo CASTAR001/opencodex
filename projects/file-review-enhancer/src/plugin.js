@@ -1,4 +1,4 @@
-import { Plugin, Panel, MenuItem, Slot, Style } from '@opencode/plugin/gui'
+import { Panel, MenuItem, Slot, Style } from '@opencode/plugin/gui'
 import { createEffect, createMemo, onCleanup } from 'solid-js'
 import { insert } from 'solid-js/web'
 import { reader } from './reader.js'
@@ -49,36 +49,34 @@ function content(ctx, props) {
   })
   return container
 }
-export default Plugin.define({
-  setup(ctx) {
-    const tabs = new Map()
-    ctx.add(Style, styles)
-    ctx.add(Slot, { at: 'session.panel.end', render: props => filePreviewSlot(ctx, props) })
-    ctx.add(Panel, {
-      id: 'reader', region: 'side',
-      list: ({ open }) => open.flatMap(id => {
-        const path = filePath(id)
-        if (!path) return []
-        if (!tabs.has(id)) tabs.set(id, { id, title: path.split('/').at(-1) + ' · 阅读' })
-        return [tabs.get(id)]
-      }),
-      render: props => content(ctx, props),
-      close: ({ tab }) => tabs.delete(tab.id),
-    })
-    ctx.add(MenuItem, { menu: 'session.panel', id: 'read-markdown', title: '阅读 Markdown 文件…',
-      async run() {
-        const screen = ctx.screen.current()
-        const session = ctx.sessions.current()
-        if (!screen || !session) return
-        const input = await ctx.dialogs.prompt({ title: '阅读 Markdown 文件', placeholder: '工作区内的 .md 文件路径' })
-        if (!input || ctx.sessions.current()?.key !== session.key) return
-        const path = screen.file.resolve(input.trim())
-        if (!workspaceMarkdown(screen.file, path)) {
-          await ctx.dialogs.alert({ title: '请选择工作区内的 .md 文件。' })
-          return
-        }
-        ctx.layout.open(ctx.id + ':' + prefix + encodeURIComponent(path), session)
-      },
-    })
-  },
-})
+export function registerReader(ctx) {
+  const tabs = new Map()
+  ctx.add(Style, styles)
+  ctx.add(Slot, { at: 'session.panel.end', render: props => filePreviewSlot(ctx, props) })
+  ctx.add(Panel, {
+    id: 'reader', region: 'side',
+    list: ({ open }) => open.flatMap(id => {
+      const path = filePath(id)
+      if (!path) return []
+      if (!tabs.has(id)) tabs.set(id, { id, title: path.split('/').at(-1) + ' · 阅读' })
+      return [tabs.get(id)]
+    }),
+    render: props => content(ctx, props),
+    close: ({ tab }) => tabs.delete(tab.id),
+  })
+  ctx.add(MenuItem, { menu: 'session.panel', id: 'read-markdown', title: '阅读 Markdown 文件…',
+    async run() {
+      const screen = ctx.screen.current()
+      const session = ctx.sessions.current()
+      if (!screen || !session) return
+      const input = await ctx.dialogs.prompt({ title: '阅读 Markdown 文件', placeholder: '工作区内的 .md 文件路径' })
+      if (!input || ctx.sessions.current()?.key !== session.key) return
+      const path = screen.file.resolve(input.trim())
+      if (!workspaceMarkdown(screen.file, path)) {
+        await ctx.dialogs.alert({ title: '请选择工作区内的 .md 文件。' })
+        return
+      }
+      ctx.layout.open(ctx.id + ':' + prefix + encodeURIComponent(path), session)
+    },
+  })
+}
