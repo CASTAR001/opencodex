@@ -1,6 +1,6 @@
 {
   "name": "project-sidebar",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Directory-based conversation tree for OpenCode Desktop side tabs",
   "license": "MIT",
   "type": "module",

@@ -1,7 +1,8 @@
-import { Ipc, Plugin, Slot, Style } from '@opencode/plugin/gui'
+import { Ipc, Plugin, Slot, Store, Style } from '@opencode/plugin/gui'
 import { Schema } from 'effect'
 import { createEffect, createMemo, createRoot, createSignal, onCleanup } from 'solid-js'
-import { projectGroups } from './model.js'
+import { projectGroups, setFolderHidden } from './model.js'
+import { closeHelp, closeQuestion, nativeProjectRow, selectNativeClose } from './native-close.js'
 import { createTree } from './tree.js'
 import { watchSideList } from './host.js'
 import css from './tree.css'
@@ -53,7 +54,30 @@ function attach(ctx, list) {
     back.hidden = !native
     list.toggleAttribute('data-ocx-project-sidebar-hidden',!native)
   }
+  const folders = ctx.stores.folders
+  const resolveRow = group => nativeProjectRow(list,group,ctx.servers.list().map(id=>ctx.servers.get(id)))
+  let confirming = false
+  async function closeProject(group) {
+    if (confirming) return
+    confirming = true
+    try {
+      const original = resolveRow(group)
+      if (!original || !await ctx.dialogs.confirm(closeQuestion(group))) return
+      if (!list.isConnected || !await selectNativeClose(() => resolveRow(group),original)) {
+        await ctx.dialogs.alert({title:'未能关闭此项目',description:closeHelp})
+        return
+      }
+      folders.update(draft => {
+        draft.closed = setFolderHidden(draft.closed ?? [],group.id,true)
+        draft.hidden = setFolderHidden(draft.hidden,group.id,false)
+      })
+    } finally { confirming = false }
+  }
   const tree = createTree({open:(server,id) => ctx.tabs.open({server,id},{focus:true}),
+    closeProject, closeHint:group => resolveRow(group) ? '' : '原生列表中未找到唯一匹配项。'+closeHelp,
+    setHidden:(id,hide) => folders.update(draft => {
+      draft.hidden = setFolderHidden(draft.hidden,id,hide)
+    }),
     native:() => { mode(true); back.focus() }})
   back.onclick = () => { mode(false); tree.root.querySelector('.ps-native').focus() }
   list.before(tree.root,back)
@@ -84,9 +108,35 @@ function attach(ctx, list) {
       : !groups.length && sources.some(s => s.state === 'loading') ? '正在读取项目…' : ''
     return {groups,status}
   })
+  // The host retains the server record after Close. Keep the tree in sync
+  // until the native row returns, or the user opens a session in this folder.
+  let previousSelection
+  createEffect(() => {
+    const closed = folders.value.closed ?? []
+    if (!closed.length) return
+    const candidates = data().groups.filter(group=>closed.includes(group.id))
+    function reconcile() {
+      const returned = candidates.filter(group => resolveRow(group)).map(group => group.id)
+      if (returned.length) folders.update(draft => {
+        draft.closed = (draft.closed ?? []).filter(id => !returned.includes(id))
+      })
+    }
+    reconcile()
+    const observer = new MutationObserver(reconcile)
+    observer.observe(list,{childList:true,subtree:true,characterData:true})
+    onCleanup(() => observer.disconnect())
+  })
   createEffect(() => {
     const selected = ctx.tabs.list().find(t => t.active)?.session
-    tree.update(data().groups,selected && {id:selected.id,server:selected.server.id},data().status)
+    const closed = folders.value.closed ?? []
+    if (previousSelection !== undefined && previousSelection !== selected?.key && selected) {
+      const group = data().groups.find(g => g.server === selected.server.id && g.sessions.some(s => s.id === selected.id))
+      if (group && closed.includes(group.id)) folders.update(draft => {
+        draft.closed = setFolderHidden(draft.closed ?? [],group.id,false)
+      })
+    }
+    previousSelection = selected?.key ?? null
+    tree.update(data().groups.filter(g=>!closed.includes(g.id)),selected && {id:selected.id,server:selected.server.id},data().status,folders.value.hidden)
   })
   onCleanup(() => {
     for (const record of histories.values()) record.dispose()
@@ -99,6 +149,7 @@ function attach(ctx, list) {
 }
 
 export default Plugin.define({
+  stores:{folders:Store.global(Schema.Struct({hidden:Schema.Array(Schema.String),closed:Schema.optional(Schema.Array(Schema.String))}),{hidden:[]})},
   main(ctx) {
     const home = require('node:os').homedir()
     ctx.provide(homeDirectory,{state:() => home})

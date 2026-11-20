@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {displayPath,projectGroups} from '../src/model.js'
+import {displayPath,projectGroups,setFolderHidden} from '../src/model.js'
 
 test('only the known home prefix is abbreviated, on a directory boundary',() => {
   for (const [path,home,want] of [
@@ -35,8 +35,8 @@ test('the desktop main entry supplies its exact home, without loading Node modul
   const gui = await readFile(new URL('../gui-experimental.cjs',import.meta.url),'utf8')
   let main = false
   const context = {module:{exports:{}},require(id) {
-    if (id === '@opencode/plugin/gui') return {Ipc:{define:t=>t},Plugin:{define:t=>t}}
-    if (id === 'effect') return {Schema:{String:'string'}}
+    if (id === '@opencode/plugin/gui') return {Store:{global:()=>({})},Ipc:{define:t=>t},Plugin:{define:t=>t}}
+    if (id === 'effect') return {Schema:{String:'string',Array:()=>({}),optional:()=>({}),Struct:()=>({})}}
     if (id === 'solid-js') return {}
     assert.ok(main && id === 'node:os')
     return {homedir:()=>'/fixture/current-user'}
@@ -49,4 +49,14 @@ test('the desktop main entry supplies its exact home, without loading Node modul
     snapshot = impl.state()
   }})
   assert.equal(snapshot,'/fixture/current-user')
+})
+
+test('hiding and restoring one directory preserves other servers and folders',() => {
+  const key = (server,path) => JSON.stringify([server,path])
+  const folder = key('local','/work/demo')
+  const others = [key('remote','/work/demo'),key('local','/tmp/demo')]
+  const hidden = setFolderHidden(others,folder,true)
+  assert.deepEqual(setFolderHidden(hidden,folder,true),[...others,folder])
+  assert.deepEqual(setFolderHidden(hidden,folder,false),others)
+  assert.deepEqual(setFolderHidden(others,folder,false),others)
 })

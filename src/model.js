@@ -11,6 +11,11 @@ export function displayPath(path, home) {
   return candidate.startsWith(root + '/') ? '~' + path.slice(root.length) : path
 }
 
+export function setFolderHidden(ids, id, hide) {
+  if (!hide) return ids.filter(key => key !== id)
+  return ids.includes(id) ? ids : [...ids,id]
+}
+
 export function projectGroups(servers) {
   const groups = new Map()
   for (const server of servers) {
