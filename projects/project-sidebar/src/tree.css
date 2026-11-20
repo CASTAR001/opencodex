@@ -1,0 +1,34 @@
+[data-ocx-project-sidebar-hidden], .ps-tree[hidden], .ps-return[hidden] { display:none !important }
+.ps-tree, .ps-return {
+  --ps-ink:var(--v2-text-text-base,#44443f);
+  --ps-muted:var(--v2-text-text-muted,#75756c);
+  --ps-tint:var(--v2-overlay-simple-overlay-hover,rgba(63,56,39,.055));
+  --ps-current:var(--v2-overlay-simple-overlay-pressed,rgba(63,56,39,.083));
+  color:var(--ps-ink);
+  font:inherit;
+}
+.ps-tree { display:flex; flex:1 1 0; min-width:0; min-height:0; flex-direction:column; text-align:start; user-select:none }
+.ps-tree *, .ps-return { box-sizing:border-box }
+.ps-tree button, .ps-return { appearance:none; border:0; margin:0; background:transparent; color:inherit; font:inherit; cursor:pointer; text-align:start }
+.ps-tree svg { fill:none; stroke:currentColor; stroke-width:1.65; stroke-linecap:round; stroke-linejoin:round; height:18px; width:18px; flex:none }
+.ps-heading { height:32px; flex:none; display:flex; align-items:center; justify-content:space-between; padding:0 6px 0 10px; font-size:13px; font-weight:550; color:var(--ps-muted) }
+.ps-tree .ps-native { width:26px; height:26px; display:grid; place-items:center; border-radius:6px; opacity:.68 }
+.ps-tree .ps-native svg { width:15px; height:15px }
+.ps-list { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; padding:1px 2px 8px }
+.ps-project + .ps-project { margin-top:3px }
+.ps-tree .ps-folder, .ps-tree .ps-session, .ps-tree .ps-more, .ps-tree .ps-empty {
+  width:100%; min-width:0; height:31px; line-height:31px; border-radius:9px; font-size:14px; font-weight:450;
+}
+.ps-tree .ps-folder { display:flex; align-items:center; gap:8px; padding:0 8px; }
+.ps-path { display:flex; min-width:0; text-align:left; unicode-bidi:isolate; line-height:normal; overflow:hidden; white-space:nowrap }
+.ps-anchor { flex:0 0 auto; max-width:45%; overflow:hidden; text-overflow:ellipsis }
+.ps-prefix { min-width:0; flex:0 1 auto; overflow:hidden; direction:rtl; text-overflow:ellipsis }
+.ps-prefix bdi { direction:ltr }
+.ps-leaf { flex:0 0 auto; max-width:55%; overflow:hidden; text-overflow:ellipsis }
+.ps-server { min-width:0; max-width:30%; margin-inline-start:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ps-muted); font-size:11px }
+.ps-tree .ps-session, .ps-tree .ps-more, .ps-tree .ps-empty { display:block; padding:0 9px 0 35px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap }
+.ps-tree .ps-session:hover, .ps-tree .ps-folder:hover, .ps-tree .ps-more:hover, .ps-tree .ps-native:hover, .ps-return:hover { background:var(--ps-tint) }
+.ps-tree .ps-session[aria-current=page] { background:var(--ps-current); font-weight:550 }
+.ps-tree .ps-more, .ps-tree .ps-empty, .ps-return { color:var(--ps-muted); font-size:12px }
+.ps-return { align-self:flex-start; padding:4px 9px; border-radius:6px }
+.ps-tree button:focus-visible, .ps-return:focus-visible { outline:2px solid var(--v2-border-border-focus,currentColor); outline-offset:-2px }

@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>项目侧栏 · OpenCode 预览</title>
+<style>
+*{box-sizing:border-box} :root{color-scheme:light;--v2-text-text-base:#464741;--v2-text-text-muted:#797a72;--v2-overlay-simple-overlay-hover:#eae9e2;--v2-overlay-simple-overlay-pressed:#e6e5dd;font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;color:#393a35;background:#faf9f5}
+body{margin:0;display:grid;grid-template-columns:clamp(248px,28vw,325px) minmax(0,1fr);height:100dvh}aside{display:flex;flex-direction:column;min-height:0;background:#f1f0e9;border-right:1px solid #e3e2d9;padding:12px 6px 9px}
+.commands{display:grid;gap:1px;margin:7px 0 15px}.commands button{font:inherit;display:flex;align-items:center;gap:8px;border:0;color:inherit;background:transparent;text-align:left;padding:4px 10px;border-radius:8px;cursor:pointer}.commands button:hover,.related button:hover{background:#e8e7df}.commands svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linejoin:round;stroke-linecap:round}button:focus-visible{outline:2px solid #8c8272;outline-offset:-2px}
+main{min-width:0;overflow:auto}.crumb{position:sticky;top:0;display:flex;align-items:center;gap:9px;height:50px;padding:0 24px;background:#faf9f5;border-bottom:1px solid #eae9e1;font-size:12px;color:#74756b;white-space:nowrap;overflow:hidden}.crumb b{font-weight:550;color:#46483f;text-overflow:ellipsis;overflow:hidden}
+article{max-width:730px;margin:clamp(50px,10vh,92px) auto;padding:0 clamp(22px,5vw,66px)}h1{font-weight:620;letter-spacing:-.04em;font-size:clamp(23px,3vw,34px);margin:0 0 35px;line-height:1.25}.bubble{margin:0 0 28px auto;width:fit-content;max-width:90%;background:#edebe1;padding:10px 15px;border-radius:15px}article p{font-size:15px;line-height:1.8}dialog{width:min(440px,90vw);border:1px solid #d8d8cf;border-radius:13px;background:#fbfaf6;padding:16px}dialog::backdrop{background:#3333}input{width:100%;padding:8px;font:inherit}.related button{display:block;width:100%;padding:7px 9px;margin:3px 0;border:0;background:transparent;text-align:left;cursor:pointer;color:inherit;font:inherit;border-radius:6px}#native{overflow:auto}.native-title{font-size:13px;color:#75776c;margin:8px}
+@media(max-width:630px){body{grid-template-columns:minmax(180px,53%) minmax(0,1fr)}.crumb{padding:0 12px}article{padding:0 13px}article p{font-size:13px}.bubble{max-width:100%}}
+[data-ocx-project-sidebar-hidden], .ps-tree[hidden], .ps-return[hidden] { display:none !important }
+.ps-tree, .ps-return {
+  --ps-ink:var(--v2-text-text-base,#44443f);
+  --ps-muted:var(--v2-text-text-muted,#75756c);
+  --ps-tint:var(--v2-overlay-simple-overlay-hover,rgba(63,56,39,.055));
+  --ps-current:var(--v2-overlay-simple-overlay-pressed,rgba(63,56,39,.083));
+  color:var(--ps-ink);
+  font:inherit;
+}
+.ps-tree { display:flex; flex:1 1 0; min-width:0; min-height:0; flex-direction:column; text-align:start; user-select:none }
+.ps-tree *, .ps-return { box-sizing:border-box }
+.ps-tree button, .ps-return { appearance:none; border:0; margin:0; background:transparent; color:inherit; font:inherit; cursor:pointer; text-align:start }
+.ps-tree svg { fill:none; stroke:currentColor; stroke-width:1.65; stroke-linecap:round; stroke-linejoin:round; height:18px; width:18px; flex:none }
+.ps-heading { height:32px; flex:none; display:flex; align-items:center; justify-content:space-between; padding:0 6px 0 10px; font-size:13px; font-weight:550; color:var(--ps-muted) }
+.ps-tree .ps-native { width:26px; height:26px; display:grid; place-items:center; border-radius:6px; opacity:.68 }
+.ps-tree .ps-native svg { width:15px; height:15px }
+.ps-list { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; padding:1px 2px 8px }
+.ps-project + .ps-project { margin-top:3px }
+.ps-tree .ps-folder, .ps-tree .ps-session, .ps-tree .ps-more, .ps-tree .ps-empty {
+  width:100%; min-width:0; height:31px; line-height:31px; border-radius:9px; font-size:14px; font-weight:450;
+}
+.ps-tree .ps-folder { display:flex; align-items:center; gap:8px; padding:0 8px; }
+.ps-path { display:flex; min-width:0; text-align:left; unicode-bidi:isolate; line-height:normal; overflow:hidden; white-space:nowrap }
+.ps-anchor { flex:0 0 auto; max-width:45%; overflow:hidden; text-overflow:ellipsis }
+.ps-prefix { min-width:0; flex:0 1 auto; overflow:hidden; direction:rtl; text-overflow:ellipsis }
+.ps-prefix bdi { direction:ltr }
+.ps-leaf { flex:0 0 auto; max-width:55%; overflow:hidden; text-overflow:ellipsis }
+.ps-server { min-width:0; max-width:30%; margin-inline-start:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ps-muted); font-size:11px }
+.ps-tree .ps-session, .ps-tree .ps-more, .ps-tree .ps-empty { display:block; padding:0 9px 0 35px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap }
+.ps-tree .ps-session:hover, .ps-tree .ps-folder:hover, .ps-tree .ps-more:hover, .ps-tree .ps-native:hover, .ps-return:hover { background:var(--ps-tint) }
+.ps-tree .ps-session[aria-current=page] { background:var(--ps-current); font-weight:550 }
+.ps-tree .ps-more, .ps-tree .ps-empty, .ps-return { color:var(--ps-muted); font-size:12px }
+.ps-return { align-self:flex-start; padding:4px 9px; border-radius:6px }
+.ps-tree button:focus-visible, .ps-return:focus-visible { outline:2px solid var(--v2-border-border-focus,currentColor); outline-offset:-2px }
+
+</style>
+<aside><div class="commands">
+<button id="new"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4H6a3 3 0 0 0-3 3v11a3 3 0 0 0 3 3h11a3 3 0 0 0 3-3v-6M10 14l1-4 8-8 3 3-8 8z"/></svg>新会话</button>
+<button id="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.7"/><path d="m16 16 5 5"/></svg>搜索</button></div><div id="native" class="related" hidden></div></aside>
+<main><div class="crumb"><span id="crumb"></span><span aria-hidden="true">/</span><b id="subtitle"></b></div><article><h1></h1><p class="bubble"></p><p id="answer"></p></article></main>
+<dialog><input type="search" aria-label="搜索会话" placeholder="搜索会话"><div id="results" class="related"></div></dialog>
+<script>(() => {
+  // src/model.js
+  var key = (server, value) => JSON.stringify([server, value]);
+  function displayPath(path, home2) {
+    if (!home2) return path;
+    const windows = /^[A-Za-z]:[\\/]/.test(home2);
+    const normalize = (s) => windows ? s.replaceAll("\\", "/").toLowerCase() : s;
+    const root = normalize(home2).replace(/\/+$/, "");
+    if (!root) return path;
+    const candidate = normalize(path);
+    if (candidate === root) return "~";
+    return candidate.startsWith(root + "/") ? "~" + path.slice(root.length) : path;
+  }
+  function projectGroups(servers) {
+    const groups2 = /* @__PURE__ */ new Map();
+    for (const server of servers) {
+      let group = function(path) {
+        const id = key(server.id, path);
+        if (!groups2.has(id)) groups2.set(id, {
+          id,
+          path,
+          server: server.id,
+          name: server.name,
+          label: displayPath(path, server.home),
+          sessions: []
+        });
+        return groups2.get(id);
+      };
+      const byID = /* @__PURE__ */ new Map();
+      for (const project of server.projects) {
+        if (!project.canonical || project.id === "global") continue;
+        byID.set(project.id, project);
+        if (project.time?.archived == null) group(project.canonical);
+      }
+      const sessions2 = new Map(server.history.map((row) => [row.id, row]));
+      for (const row of server.known) sessions2.set(row.id, row);
+      for (const row of sessions2.values()) {
+        const project = byID.get(row.projectID);
+        if (row.parentID || row.time?.archived != null || project?.time?.archived != null) continue;
+        const path = project?.canonical || row.location?.directory;
+        if (!path) continue;
+        group(path).sessions.push({ id: row.id, title: row.title || "\u672A\u547D\u540D\u4F1A\u8BDD", time: row.time?.updated ?? row.time?.created ?? 0 });
+      }
+    }
+    for (const group of groups2.values()) group.sessions.sort((a, b) => b.time - a.time || a.id.localeCompare(b.id));
+    return [...groups2.values()];
+  }
+
+  // src/tree.js
+  var ns = "http://www.w3.org/2000/svg";
+  var paths = {
+    folder: "M3 7V5.5A1.5 1.5 0 0 1 4.5 4H9l2.2 2.4h8.3A1.5 1.5 0 0 1 21 8v10.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5V7Zm0 2h18",
+    open: "M3 17V5.5A1.5 1.5 0 0 1 4.5 4H9l2.2 2.4H18A1.5 1.5 0 0 1 19.5 8v1M3.4 18.3l2.4-7.6A1.8 1.8 0 0 1 7.5 9.5h12.8a1.2 1.2 0 0 1 1.1 1.6l-2.5 7.4a2 2 0 0 1-1.9 1.4H5a1.7 1.7 0 0 1-1.6-1.6Z",
+    list: "M8.5 6h11M8.5 12h11M8.5 18h11M4 6h.2M4 12h.2M4 18h.2"
+  };
+  function icon(name) {
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", paths[name]);
+    svg.append(path);
+    return svg;
+  }
+  function element(tag, name, text) {
+    const node = document.createElement(tag);
+    node.className = name;
+    if (text) node.textContent = text;
+    return node;
+  }
+  function button(name, text) {
+    const node = element("button", name, text);
+    node.type = "button";
+    return node;
+  }
+  function createTree({ open, native: native2 }) {
+    const root = element("nav", "ps-tree");
+    root.setAttribute("aria-label", "\u9879\u76EE\u4F1A\u8BDD");
+    const header = element("div", "ps-heading");
+    header.append(element("span", "", "\u9879\u76EE"));
+    if (native2) {
+      const toggle = button("ps-native");
+      toggle.title = "\u5207\u6362\u5230\u539F\u751F\u4FA7\u680F";
+      toggle.setAttribute("aria-label", toggle.title);
+      toggle.append(icon("list"));
+      toggle.onclick = native2;
+      header.append(toggle);
+    }
+    const list = element("div", "ps-list");
+    root.append(header, list);
+    const expansion = /* @__PURE__ */ new Map();
+    const limits = /* @__PURE__ */ new Map();
+    let groups2 = [], active2, status, lastActive;
+    function draw() {
+      const focusKey = list.contains(document.activeElement) && document.activeElement.dataset.key;
+      const scroll = list.scrollTop;
+      const fragment = document.createDocumentFragment();
+      const servers = new Set(groups2.map((g) => g.server));
+      const nodes = /* @__PURE__ */ new Map();
+      for (const group of groups2) {
+        const section = element("div", "ps-project");
+        const expanded = expansion.get(group.id) ?? group.sessions.length > 0;
+        const head = button("ps-folder");
+        nodes.set(group.id, head);
+        head.dataset.key = group.id;
+        head.title = servers.size > 1 ? group.name + " \xB7 " + group.path : group.path;
+        head.setAttribute("aria-label", head.title);
+        head.setAttribute("aria-expanded", String(expanded));
+        head.append(icon(expanded ? "open" : "folder"));
+        const label = element("span", "ps-path");
+        label.dir = "ltr";
+        const split = Math.max(group.label.lastIndexOf("/"), group.label.lastIndexOf("\\")) + 1;
+        if (split && split < group.label.length) {
+          const prefix = group.label.slice(0, split);
+          const anchor = prefix.match(/^(?:~[\/\\]|[A-Za-z]:[\/\\]|\/Volumes\/[^/]+\/|\/)/)?.[0] ?? "";
+          const parent = element("span", "ps-prefix");
+          parent.append(element("bdi", "", prefix.slice(anchor.length)));
+          label.append(element("span", "ps-anchor", anchor), parent, element("span", "ps-leaf", group.label.slice(split)));
+        } else label.textContent = group.label;
+        head.append(label);
+        if (servers.size > 1) head.append(element("span", "ps-server", group.name));
+        head.onclick = () => {
+          expansion.set(group.id, !expanded);
+          draw();
+        };
+        section.append(head);
+        if (expanded) {
+          const limit = limits.get(group.id) ?? 5;
+          const visible = group.sessions.slice(0, limit);
+          const current = group.sessions.find((s) => active2?.server === group.server && s.id === active2.id);
+          if (current && !visible.includes(current)) visible.push(current);
+          for (const session of visible) {
+            const row = button("ps-session", session.title);
+            row.title = session.title;
+            row.dataset.key = JSON.stringify([group.id, session.id]);
+            nodes.set(row.dataset.key, row);
+            if (current === session) row.setAttribute("aria-current", "page");
+            row.onclick = () => open(group.server, session.id);
+            section.append(row);
+          }
+          if (!group.sessions.length) section.append(element("span", "ps-empty", "\u6682\u65E0\u4F1A\u8BDD"));
+          if (visible.length < group.sessions.length) {
+            const more = button("ps-more", "\u663E\u793A\u66F4\u591A\u4F1A\u8BDD");
+            more.dataset.key = group.id + "/more";
+            nodes.set(more.dataset.key, more);
+            more.onclick = () => {
+              limits.set(group.id, limit + 10);
+              draw();
+            };
+            section.append(more);
+          }
+        }
+        fragment.append(section);
+      }
+      if (!groups2.length || status) fragment.append(element("span", "ps-empty", status || "\u6682\u65E0\u9879\u76EE"));
+      list.replaceChildren(fragment);
+      if (focusKey) nodes.get(focusKey)?.focus({ preventScroll: true });
+      list.scrollTop = scroll;
+    }
+    return { root, update(next, selection, message = "") {
+      groups2 = next;
+      active2 = selection;
+      status = message;
+      const target = selection && groups2.find((g) => g.server === selection.server && g.sessions.some((s) => s.id === selection.id));
+      const activeKey = target && JSON.stringify([target.id, selection.id]);
+      if (activeKey && activeKey !== lastActive) expansion.set(target.id, true);
+      lastActive = activeKey;
+      draw();
+    } };
+  }
+
+  // preview/demo.js
+  var home = "/Users/demo";
+  var projects = [
+    ["ui", "/Users/demo/work/opencodex", "\u5BA1\u8BA1 OpenCode UI \u63D2\u4EF6\u53EF\u884C\u6027", "\u5148\u770B\u4E00\u4E0B\u4FA7\u8FB9\u6807\u7B7E\u9875\u80FD\u63D0\u4F9B\u54EA\u4E9B\u63A5\u53E3\u3002", "\u4FA7\u8FB9\u6807\u7B7E\u9875\u53EF\u4EE5\u6309\u9879\u76EE\u7EC4\u7EC7\u4F1A\u8BDD\u3002\u5C55\u5F00\u5DE6\u4FA7\u7684\u6587\u4EF6\u5939\uFF0C\u5C31\u80FD\u76F4\u63A5\u6253\u5F00\u8FD9\u4E2A\u76EE\u5F55\u4E0B\u7684\u8BA8\u8BBA\u3002"],
+    ["pre", "/Users/demo/work/pre-design"],
+    ["skills", "/Users/demo/work/agentskills", "\u521D\u59CB\u5316\u4E24\u4EFD\u5168\u5C40\u6280\u80FD\u4ED3\u5E93", "\u6574\u7406\u53EF\u590D\u7528\u7684\u6280\u80FD\u76EE\u5F55\u3002", "\u4E24\u4EFD\u6280\u80FD\u4ED3\u5E93\u5DF2\u7ECF\u5206\u522B\u5EFA\u7ACB\u7D22\u5F15\uFF0C\u53EF\u4EE5\u6309\u7528\u9014\u67E5\u770B\u3002"],
+    ["gift", "/Users/demo/studio/sunup-gift", "\u7EE7\u7EED\u4E1C\u5F02\u805A\u53D8\u6587\u521B\u9879\u76EE", "\u6CBF\u7740\u4E0A\u4E00\u7248\u8349\u56FE\u7EE7\u7EED\u3002", "\u8FD9\u6B21\u4ECE\u5305\u88C5\u7684\u5C55\u5F00\u65B9\u5F0F\u5F00\u59CB\uFF0C\u4FDD\u7559\u8349\u56FE\u91CC\u6298\u9875\u7684\u7ED3\u6784\u3002"],
+    ["notes", "/Users/demo/notes/obsidian", "\u9002\u914D Obsidian \u7684 macOS \u8FC1\u79FB", "\u68C0\u67E5\u7B14\u8BB0\u5E93\u8FC1\u79FB\u540E\u4F7F\u7528\u7684\u8DEF\u5F84\u3002", "\u5DF2\u5C06\u9644\u4EF6\u3001\u6A21\u677F\u548C\u7B14\u8BB0\u653E\u5728\u540C\u4E00\u76EE\u5F55\u4E0B\uFF0C\u53EF\u4EE5\u9010\u9879\u6838\u5BF9\u3002"],
+    ["archive", "/Volumes/Archive/fieldwork/2026/autumn/opencodex", "\u6574\u7406\u5F52\u6863\u7248\u672C\u7684\u53D8\u66F4", "\u8FD9\u91CC\u662F\u540C\u540D\u7684\u53E6\u4E00\u4E2A\u4ED3\u5E93\u3002", "\u8FD9\u4E2A\u4F1A\u8BDD\u4F4D\u4E8E\u5916\u7F6E\u5377\u7684\u5F52\u6863\u76EE\u5F55\uFF0C\u548C\u5DE5\u4F5C\u76EE\u5F55\u4E2D\u7684\u540C\u540D\u4ED3\u5E93\u5206\u522B\u663E\u793A\u3002"]
+  ];
+  var active = { server: "sidecar", id: "s-ui" };
+  var counter = 0;
+  var sessions = projects.filter((row) => row[2]).map(([id, path, title], i) => ({
+    id: "s-" + id,
+    title,
+    projectID: id,
+    location: { directory: path },
+    time: { updated: 50 - i }
+  }));
+  var groups = () => projectGroups([{ id: "sidecar", name: "\u672C\u673A", home, projects: projects.map(([id, canonical]) => ({ id, canonical })), known: sessions, history: [] }]);
+  var $ = (s) => document.querySelector(s);
+  var native = $("#native");
+  var dialog = $("dialog");
+  var tree = createTree({ open: select, native: () => {
+    tree.root.hidden = true;
+    native.hidden = false;
+    drawNative();
+  } });
+  $("aside").append(tree.root);
+  function link(container, text, fn) {
+    const node = document.createElement("button");
+    node.textContent = text;
+    node.onclick = fn;
+    container.append(node);
+  }
+  function drawNative() {
+    native.replaceChildren();
+    link(native, "\u8FD4\u56DE\u9879\u76EE\u6811", () => {
+      native.hidden = true;
+      tree.root.hidden = false;
+    });
+    const heading = document.createElement("p");
+    heading.className = "native-title";
+    heading.textContent = "\u6253\u5F00\u7684\u6807\u7B7E\u9875";
+    native.append(heading);
+    for (const row of sessions) link(native, row.title, () => select("sidecar", row.id));
+  }
+  function select(server, id) {
+    const session = sessions.find((row) => row.id === id);
+    if (!session) return;
+    active = { server, id };
+    const group = groups().find((g) => g.sessions.some((s) => s.id === id));
+    const source = projects.find((row) => row[0] === session.projectID);
+    $("#crumb").textContent = group.label;
+    $("#subtitle").textContent = $("h1").textContent = session.title;
+    const original = id === "s-" + source[0];
+    $(".bubble").textContent = original ? source[3] : "\u5F00\u59CB\u4E00\u4E2A\u65B0\u4F1A\u8BDD\u3002";
+    $("#answer").textContent = original ? source[4] : "\u8FD9\u4E2A\u4F1A\u8BDD\u5DF2\u52A0\u5165\u5DE6\u4FA7\u5BF9\u5E94\u7684\u9879\u76EE\u3002";
+    tree.update(groups(), active);
+    if (!native.hidden) drawNative();
+  }
+  function search() {
+    const results = $("#results");
+    results.replaceChildren();
+    const match = $("input").value.toLowerCase();
+    for (const row of sessions.filter((row2) => row2.title.toLowerCase().includes(match))) {
+      link(results, row.title, () => {
+        dialog.close();
+        select("sidecar", row.id);
+      });
+    }
+    if (!results.children.length) results.textContent = "\u672A\u627E\u5230\u4F1A\u8BDD";
+  }
+  $("#search").onclick = () => {
+    $("input").value = "";
+    search();
+    dialog.showModal();
+    $("input").focus();
+  };
+  $("input").oninput = search;
+  dialog.addEventListener("click", (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+  $("#new").onclick = () => {
+    const parent = sessions.find((row) => row.id === active.id);
+    const id = "draft-" + ++counter;
+    sessions.unshift({ ...parent, id, title: "\u65B0\u4F1A\u8BDD " + counter, time: { updated: 100 + counter } });
+    select("sidecar", id);
+  };
+  select(active.server, active.id);
+})();
+</script></html>
