@@ -4,6 +4,10 @@ OpenCode Desktop 侧边标签页的项目会话树。项目行显示仓库的本
 
 直接打开 [交互预览](preview/index.html)。预览在本地运行，项目、路径、搜索和新会话都使用示例数据。正式插件复用宿主已有的新会话和搜索入口。
 
+## 安装与使用
+
+在 macOS 上，将本目录中的 `package.json` 和 `gui-experimental.cjs` 放到 `~/.config/opencode/plugins/project-sidebar/`。OpenCode Desktop 加载插件后，在「设置 → 偏好设置 → 界面布局」中选择「侧边标签页」即可看到项目树。
+
 ## 路径与会话
 
 - 本机内置服务使用 Desktop 主进程通过 GUI IPC 提供的用户主目录。例如主目录为 `/Users/demo` 时，`/Users/demo/work/opencodex` 显示为 `~/work/opencodex`。`/Users/demo2`、外置卷和远程服务保留自己的路径。悬停能看到完整地址。
