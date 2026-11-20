@@ -38,6 +38,25 @@
 [data-ocx-reader] [data-component="markdown"] :is(ul,ol) { padding-inline-start: 1.55em; }
 [data-ocx-reader] [data-component="markdown"] [data-component="markdown-table"] { max-width: 100%; margin: 1em 0 1.25em; }
 [data-ocx-reader] [data-component="markdown-table"] table { font-size: .9em; }
+/* Keep native column proportions. Use the pane's width to budget cell padding,
+   and keep a small readable floor for very dense comparisons. */
+[data-ocx-reader] [data-component="markdown-table"] :is(th,td) {
+  min-inline-size: 2.5em;
+  padding-inline: clamp(3px, 1.25cqi, 12px);
+}
+/* A link's favicon belongs to its text. Leave the internal layout of real
+   images, math and preformatted content to the renderer. */
+[data-ocx-reader] [data-component="markdown-table"] :is(th,td):not(:has(
+  img:not([data-markdown-favicon]), picture, svg, video, canvas, math, .katex, pre
+)) {
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+[data-ocx-reader] [data-component="markdown-table"] :not(pre) > code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 [data-ocx-reader] [data-component="markdown-table"] [align="center"] { text-align: center; }
 [data-ocx-reader] [data-component="markdown-table"] [align="right"] { text-align: right; }
 [data-ocx-reader] .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: .25em 0; }
