@@ -1,6 +1,6 @@
 # OpenCodex · OpenCode Desktop 插件合集
 
-面向 macOS OpenCode Desktop 2.3.2 的模块化 UI 插件合集。可以按需安装代码阅读、文件阅读、会话导航、字体和用量监控组件。扩展列表的中文名称由独立插件提供，支持切换主题，悬停可查看原插件 ID。
+适用于 **Windows 和 macOS 的 OpenCode 2 Desktop**。可以按需增强代码块、阅读右栏 Markdown 文件、跳转到历史提示词、选择中英文字体，或查看用量和剩余额度。日常使用的插件已完成 Windows 原生桌面版迁移，macOS 的开发和回归验证基线为 Desktop 2.3.2。
 
 - [功能需求与开发顺序](REQUIREMENTS.md)
 - [逐项可行性与源码依据](FEASIBILITY.md)
@@ -25,10 +25,32 @@
 | 11 | [项目文件夹整理](projects/project-sidebar/README.md) | **已弃用** · 最后版本 `0.1.0-alpha.3`。侧边标签页使用 OpenCode 原生项目分组 |
 | 12 | [插件中文名称](projects/plugin-labels-zh/README.md) | `0.1.0` · 在本机扩展列表显示中文名，保留原插件 ID 和原生操作 |
 
-安装方式见各组件的 README。使用 12 时，将其 `package.json` 和 `gui-experimental.cjs` 放到 `~/.config/opencode/plugins/plugin-labels-zh/`。08 还包含服务端入口和随包技能，需按该组件的说明构建并保留包内目录结构。
+## 在 Windows 和 macOS 上安装
 
-## 安装验证工具
+首次安装可从上表的 **02、06、07、08、09、10、12** 中按需选择。下表列出 Desktop 使用本机后台时的默认全局插件目录。
 
-纯 GUI 插件具备打包产物后，可解开发行包，并运行 `python3 -B tests/sidecar_install.py /absolute/path/to/extracted/package`。工具使用 Desktop 自带后台及隔离配置，验证插件发现、bundle 内容和移除后的清单。原生窗口效果需单独验收。
+| 平台 | 插件目录 |
+|---|---|
+| Windows 原生 Desktop | `%USERPROFILE%\.config\opencode\plugins\`（可粘贴到资源管理器地址栏） |
+| macOS | `~/.config/opencode/plugins/` |
+
+如果为后台设置了 `XDG_CONFIG_HOME`，插件目录在其下的 `opencode/plugins/`。若 Desktop 连接 WSL 或远程后台，请使用相应后台的配置目录。
+
+1. 克隆合集并进入要安装的组件目录。例如，安装代码块增强时运行以下命令。
+
+   ```sh
+   git clone https://github.com/CASTAR001/opencodex.git
+   cd opencodex/projects/code-block-enhancer
+   ```
+
+2. 准备发行包。除 Markdown 阅读器外，其余六个在用组件均已附带 GUI 成品，可直接运行 `npm pack --ignore-scripts`。**Markdown 阅读器**在其组件目录先运行 `npm ci --include=dev`，再运行 `npm pack`，由打包脚本生成 `dist/`。Windows PowerShell 可用 `npm.cmd` 执行相同命令。
+3. 解开生成的 `.tgz`（两端都可运行 `tar -xf <包文件名.tgz>`），将其中的 `package` 文件夹改名为插件 ID，再放入上表的插件目录。例如代码块增强的清单应在 `plugins/code-block-enhancer/package.json`。保留包内的目录结构，以便额度插件加载服务端和 RPC、Markdown 阅读器加载服务端和随包技能。
+4. 下次打开 Desktop 后，在「设置 → 扩展 → 插件」确认已加载。装了「插件中文名称」时，悬停名称可查看原 ID。字体在本机的「设置 → 中英文字体」中选择，终端字体在「设置 → 外观」中选择。
+
+## 安装验证
+
+两端都可以用已有会话和工作区文件验证界面效果。例如，在对话代码块切换行号，或从右侧文件树打开[示例 Markdown](projects/file-review-enhancer/examples/tidal-notebook.md) 检查脚注和表格。
+
+macOS 另有纯 GUI 插件隔离验证脚本。解开发行包后，在合集根目录运行 `python3 -B tests/sidecar_install.py /absolute/path/to/extracted/package`。脚本默认调用 `/Applications/OpenCode.app` 内的后台，检查插件发现、GUI 包内容及移除后的清单。
 
 [安装验证脚本](tests/sidecar_install.py) · [MIT 许可](LICENSE)
