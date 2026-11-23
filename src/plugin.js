@@ -1,6 +1,8 @@
-import { Plugin, Slot, Style } from '@opencode/plugin/gui'
-import { createComponent, createEffect, onCleanup } from 'solid-js'
+import { Plugin, Slot, Store, Style } from '@opencode/plugin/gui'
+import { Schema } from 'effect'
+import { createComponent, createEffect, on, onCleanup } from 'solid-js'
 import { families, contract, unavailable } from './contract.js'
+import { displayedFamilies, moveFamily } from './order.js'
 import css from './style.css'
 
 const number = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 })
@@ -158,8 +160,49 @@ function dashboard(ctx, session) {
   let configured = [],
     discovered = false,
     inventorySerial = 0
+  const order = ctx.stores.displayOrder
+  let sorting = false, sortButton, refreshAll
   const has = (id) => configured.some((row) => row.family === id)
-  const options = () => configured.map((row) => [row.family, families[row.family]])
+  const available = () => configured.map(row => row.family)
+  const sorted = () => displayedFamilies(order.value?.ids ?? [], available())
+  const options = () => sorted().map(id => [id, families[id]])
+  function drawOrder() {
+    const ids = sorted()
+    const focused = content.contains(document.activeElement) ? document.activeElement : null
+    const rows = ids.map((id, index) => {
+      const row = el('div', null, 'pq-card pq-top')
+      const arrows = el('div', null, 'pq-top')
+      row.append(el('h3', families[id]), arrows)
+      for (const [direction, symbol, label] of [[-1, '↑', '上移'], [1, '↓', '下移']]) {
+        const button = btn(symbol, () => order.update(draft => {
+          draft.ids = moveFamily(draft.ids, available(), id, direction)
+        }))
+        button.dataset.family = id
+        button.dataset.step = direction
+        button.disabled = !ids[index + direction]
+        button.title = label + ' ' + families[id]
+        button.setAttribute('aria-label', button.title)
+        arrows.append(button)
+      }
+      return row
+    })
+    content.replaceChildren(...rows)
+    if (focused?.dataset.family) {
+      const moves = [...content.querySelectorAll('button:enabled')].filter(b => b.dataset.family === focused.dataset.family)
+      const next = moves.find(b => b.dataset.step === focused.dataset.step) ?? moves[0] ?? sortButton
+      next?.focus()
+    }
+  }
+  createEffect(on(() => [...(order.value?.ids ?? [])], () => {
+    if (index === 'quota') sorting ? drawOrder() : drawQuotas()
+    else {
+      const select = controls.querySelector('select[aria-label="模型服务商"]')
+      if (select) {
+        select.replaceChildren(new Option('全部服务商', ''), ...options().map(([id, name]) => new Option(name, id)))
+        select.value = filter
+      }
+    }
+  }, { defer: true }))
   function drawUsage() {
     if (!discovered || !configured.length || index !== 'usage') return
     if (!stats) return
@@ -221,6 +264,8 @@ function dashboard(ctx, session) {
   }
   function drawQuotas() {
     if (!alive || index !== 'quota') return
+    if (refreshAll) refreshAll.disabled = busy.size > 0 || !configured.some(r => !unavailable[r.family])
+    if (sorting) return
     const cards = options().map(([id, name]) => {
       const card = el('section', null, 'pq-card'),
         top = el('div', null, 'pq-top')
@@ -251,8 +296,6 @@ function dashboard(ctx, session) {
       return card
     })
     content.replaceChildren(...cards)
-    const all = controls.querySelector('button')
-    if (all) all.disabled = busy.size > 0 || !configured.some((r) => !unavailable[r.family])
   }
   async function refresh(id, source) {
     if (unavailable[id] || !has(id)) return
@@ -292,6 +335,8 @@ function dashboard(ctx, session) {
   }
   function switchTo(i, refreshAccounts = configured) {
     cancelUsage()
+    if (i !== 'quota' || configured.length < 2) sorting = false
+    refreshAll = sortButton = undefined
     index = i
     buttons.forEach((b, n) => b.setAttribute('aria-pressed', String(i === keys[n])))
     controls.replaceChildren()
@@ -327,7 +372,20 @@ function dashboard(ctx, session) {
       void readUsage()
       clock = setInterval(readUsage, 60000)
     } else {
-      controls.append(btn('刷新全部额度', () => Promise.all(configured.map((r) => refresh(r.family)))))
+      if (configured.length > 1) {
+        sortButton = btn(sorting ? '完成排序' : '排序', () => {
+          sorting = !sorting
+          sortButton.textContent = sorting ? '完成排序' : '排序'
+          refreshAll.hidden = sorting
+          if (sorting) drawOrder()
+          else drawQuotas()
+        })
+        controls.append(sortButton)
+      }
+      refreshAll = btn('刷新全部额度', () => Promise.all(configured.map((r) => refresh(r.family))))
+      refreshAll.hidden = sorting
+      controls.append(refreshAll)
+      if (sorting) drawOrder()
       drawQuotas()
       for (const row of refreshAccounts) void refresh(row.family)
     }
@@ -380,6 +438,7 @@ function dashboard(ctx, session) {
   return createComponent(ctx.ui.Dialog, { title: session.location ? '用量与额度' : '用量与额度 · 本机全局', size: 'large', children: root })
 }
 export default Plugin.define({
+  stores: { displayOrder: Store.global(Schema.Struct({ ids: Schema.Array(Schema.String) }), { ids: [] }) },
   setup(ctx) {
     ctx.add(Style, css)
     const draft = () => ctx.router.path().split('?')[0] === '/new-session'
