@@ -235,6 +235,7 @@ function dashboard(ctx, session) {
       const entries = history.get(id)?.rows
       if (!entries) card.append(el('p', unavailable[id] || (busy.has(id) ? '正在查询额度…' : '等待查询'), 'pq-muted'))
       for (const entry of entries || []) {
+        if (entry.sources?.length) card.append(el('strong', entry.sources.join(' / ')))
         for (const row of entry.values || []) {
           const reset = row.endsAt ? '　周期结束 ' + time(row.endsAt) : row.reset ? '　重置 ' + time(row.reset) : ''
           card.append(el('div', row.label + '　' + remainingText(row) + reset))
@@ -260,21 +261,22 @@ function dashboard(ctx, session) {
     const valid = () => alive && connection === JSON.stringify(configured.find((r) => r.family === id))
     busy.set(id, connection)
     drawQuotas()
+    function receive(rows) {
+      if (!valid()) return
+      const previous = history.get(id)?.rows || []
+      const index = source ? previous.findIndex(row => row.sources?.includes(source) || row.source === source) : -1
+      history.set(id, { connection, rows: index < 0 ? rows : [...previous.slice(0, index), ...rows, ...previous.slice(index + 1)] })
+    }
     try {
       const rows = await api.refresh(
         { family: id, ...(source && { source }) },
         { location, signal: AbortSignal.any([lifetime.signal, AbortSignal.timeout(15000)]) },
       )
-      if (valid())
-        history.set(id, {
-          connection,
-          rows: source
-            ? [...(history.get(id)?.rows || []).filter((p) => p.source !== source), ...rows]
-            : rows,
-        })
+      receive(rows)
     } catch (error) {
       const problem = error?.name === 'TimeoutError' ? '本机额度查询超时，请稍后刷新。' : '本机额度插件未能返回结果，请稍后刷新。'
-      if (valid()) history.set(id, { connection, rows: [{ problem }] })
+      const prior = source && history.get(id)?.rows.find(row => row.sources?.includes(source) || row.source === source)
+      receive([{ ...(source && { sources: prior?.sources || [source], source, select: true }), problem }])
     } finally {
       if (busy.get(id) === connection) busy.delete(id)
       drawQuotas()

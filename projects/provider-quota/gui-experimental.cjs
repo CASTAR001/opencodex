@@ -438,6 +438,7 @@ function dashboard(ctx, session) {
       const entries = history.get(id)?.rows;
       if (!entries) card.append(el("p", unavailable[id] || (busy.has(id) ? "\u6B63\u5728\u67E5\u8BE2\u989D\u5EA6\u2026" : "\u7B49\u5F85\u67E5\u8BE2"), "pq-muted"));
       for (const entry of entries || []) {
+        if (entry.sources?.length) card.append(el("strong", entry.sources.join(" / ")));
         for (const row of entry.values || []) {
           const reset = row.endsAt ? "\u3000\u5468\u671F\u7ED3\u675F " + time(row.endsAt) : row.reset ? "\u3000\u91CD\u7F6E " + time(row.reset) : "";
           card.append(el("div", row.label + "\u3000" + remainingText(row) + reset));
@@ -463,19 +464,22 @@ function dashboard(ctx, session) {
     const valid = () => alive && connection === JSON.stringify(configured.find((r) => r.family === id));
     busy.set(id, connection);
     drawQuotas();
+    function receive(rows) {
+      if (!valid()) return;
+      const previous = history.get(id)?.rows || [];
+      const index2 = source ? previous.findIndex((row) => row.sources?.includes(source) || row.source === source) : -1;
+      history.set(id, { connection, rows: index2 < 0 ? rows : [...previous.slice(0, index2), ...rows, ...previous.slice(index2 + 1)] });
+    }
     try {
       const rows = await api.refresh(
         { family: id, ...source && { source } },
         { location, signal: AbortSignal.any([lifetime.signal, AbortSignal.timeout(15e3)]) }
       );
-      if (valid())
-        history.set(id, {
-          connection,
-          rows: source ? [...(history.get(id)?.rows || []).filter((p) => p.source !== source), ...rows] : rows
-        });
+      receive(rows);
     } catch (error) {
       const problem = error?.name === "TimeoutError" ? "\u672C\u673A\u989D\u5EA6\u67E5\u8BE2\u8D85\u65F6\uFF0C\u8BF7\u7A0D\u540E\u5237\u65B0\u3002" : "\u672C\u673A\u989D\u5EA6\u63D2\u4EF6\u672A\u80FD\u8FD4\u56DE\u7ED3\u679C\uFF0C\u8BF7\u7A0D\u540E\u5237\u65B0\u3002";
-      if (valid()) history.set(id, { connection, rows: [{ problem }] });
+      const prior = source && history.get(id)?.rows.find((row) => row.sources?.includes(source) || row.source === source);
+      receive([{ ...source && { sources: prior?.sources || [source], source, select: true }, problem }]);
     } finally {
       if (busy.get(id) === connection) busy.delete(id);
       drawQuotas();
