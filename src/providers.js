@@ -31,7 +31,7 @@ const defaults = {
   'minimax-cn-coding-plan': 'api.minimaxi.com',
 }
 export function routeFor(id, base, canonical) {
-  const provider = canonical === 'xiaomi-token-plan-cn' ? canonical : id
+  const provider = Object.hasOwn(defaults, id) ? id : canonical
   let host = Object.hasOwn(defaults, provider) ? defaults[provider] : undefined
   if (base != null && base !== '') {
     let url

@@ -23,6 +23,8 @@ OpenCode Desktop 2.3.2 的独立插件。点击对话顶栏的**钱包图标**�
 
 ## 安装和验证
 
+同一服务商配置多个模型或受支持的 MCP 连接时，钱包会按官方查询地址和 API Key 分组。共用同一组的连接合并显示，并列出连接名。不同 Key 分别查询，即使属于同一账单账户也不会相加。跨站共用 Key 时由你选择要查询的站点。
+
 运行 `npm ci`、`npm run build`、`npm test` 和 `npm pack`。把生成包中的 `package/` 全部内容放入 OpenCode 全局插件目录的 `provider-quota/` 子目录，然后重新打开 Desktop。回退时可在设置中停用 GUI；完整停用服务端采集需要将插件移出发现目录并重新加载服务。界面和服务端独立于 Session Metrics、主题及字体插件。
 
 版本 `0.1.0-alpha.6` 已在 macOS 的 OpenCode Desktop 2.3.2 上验收，MiMo 本期剩余额度可正常显示。自动化检查覆盖构建、服务商路由和隔离后台加载。宿主升级后需复核 GUI 入口、统计接口和 RPC，以及 MiniMax MCP 内层调用使用的只读 SQLite 查询。

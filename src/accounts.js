@@ -89,13 +89,12 @@ export function quotaService(ctx, mcpAccounts, request = fetch, clock = Date.now
       if (route?.family === family && p.activation !== 'disabled')
         accounts.push({ route, source: p.id, key: () => providerKey(ctx, p) })
     }
-    if (family === 'minimax') accounts.push(...mcpAccounts())
-    const selected = source ? accounts.filter((a) => a.source === source) : accounts
-    if (!selected.length) return [{ problem: family === 'mimo'
+    accounts.push(...mcpAccounts().filter(account => account.route.family === family))
+    if (!accounts.length || (source && !accounts.some(a => a.source === source))) return [{ problem: family === 'mimo'
       ? '当前工作区没有可查询的 MiMo 中国区个人 Token Plan 连接。'
       : '当前工作区没有可用于该额度接口的官方 API 连接' }]
     const resolved = await Promise.all(
-      selected.map(async (account) => {
+      accounts.map(async (account) => {
         let key
         try {
           key = apiKey(await account.key())
@@ -105,21 +104,19 @@ export function quotaService(ctx, mcpAccounts, request = fetch, clock = Date.now
         return { account, key }
       }),
     )
-    return Promise.all(
-      resolved.map(({ account, key }) => {
-        const ambiguous =
-          key &&
-          resolved.some(
-            (other) => other.key === key && other.account.route.endpoint !== account.route.endpoint,
-          )
-        if (ambiguous)
-          return {
-            source: account.source,
-            select: true,
-            problem: '同一 Key 对应多个站点，请选择实际使用的连接。',
-          }
-        return read(account, key, signal)
-      }),
-    )
+    // Credentials and grouping live only for this refresh. Missing credentials cannot identify an account.
+    const groups = []
+    for (const { account, key } of resolved) {
+      const group = key && groups.find(g => g.key === key && g.account.route.endpoint === account.route.endpoint)
+      if (group) group.sources.push(account.source)
+      else groups.push({ account, key, sources: [account.source] })
+    }
+    const targets = source ? groups.filter(group => group.sources.includes(source)) : groups
+    return Promise.all(targets.map(async ({ account, key, sources }) => {
+      const identity = accounts.length > 1 ? { sources } : {}
+      if (!source && key && groups.some(other => other.key === key && other.account.route.endpoint !== account.route.endpoint))
+        return { ...identity, source: account.source, select: true, problem: '同一 Key 对应多个站点，请选择实际使用的连接。' }
+      return { ...identity, ...await read(account, key, signal) }
+    }))
   }
 }

@@ -140,7 +140,7 @@ test('on-demand API keys, no OAuth resolution, no cross-host fallback, no secret
   assert.equal(first[0].values[0].remaining, 0)
   assert.equal(second[1].values, undefined)
   assert.ok(!JSON.stringify(first).includes('synthetic'))
-  assert.deepEqual(Object.keys(first[0]).sort(), ['at', 'values'])
+  assert.deepEqual(first.map(entry => entry.sources), [['ds-alias'], ['ds-other']])
   await fn('deepseek')
   assert.equal(calls, 2)
 })
@@ -163,6 +163,52 @@ test('manual retry respects 429 and never retries automatically', async () => {
   t += 11000
   await fn('minimax')
   assert.equal(calls, 2)
+})
+test('model and MCP connections share only matching quota endpoint and key', async () => {
+  const model = { id: 'my-m3', canonical: 'minimax-cn', settings: { apiKey: 'test-model' } }
+  const mcp = { source: 'MCP · studio', route: routeFor('minimax-cn'), key: () => mcpKey }
+  const calls = []
+  let mcpKey = 'test-model'
+  const read = quotaService({ provider: { list: async () => ({ data: [model] }) } }, () => [mcp], async (url, init) => {
+    calls.push(url)
+    if (init.headers.Authorization === 'Bearer test-denied') return new Response(null, {status: 403})
+    const left = init.headers.Authorization === 'Bearer test-model' ? 0 : 76
+    return Response.json({model_remains: [{ model_name: 'MiniMax-M3', current_interval_remaining_percent: left }]})
+  })
+  const shared = await read('minimax')
+  assert.equal(shared.length, 1)
+  assert.deepEqual(shared[0].sources, ['my-m3', 'MCP · studio'])
+  assert.equal(shared[0].values[0].remaining, 0)
+  assert.equal(calls.length, 1)
+  mcpKey = 'test-media'
+  const separate = await read('minimax')
+  assert.deepEqual(separate.map(e => [e.sources, e.values[0].remaining]), [[['my-m3'], 0], [['MCP · studio'], 76]])
+  mcpKey = 'test-denied'
+  const denied = await read('minimax')
+  assert.equal(denied[0].values[0].remaining, 0)
+  assert.match(denied[1].problem, /权限/)
+  mcpKey = 'test-model'
+  mcp.route = routeFor('minimax')
+  calls.length = 0
+  assert.ok((await read('minimax')).every(e => e.select))
+  assert.equal(calls.length, 0)
+  const [chosen] = await read('minimax', undefined, mcp.source)
+  assert.deepEqual(chosen.sources, [mcp.source])
+  assert.deepEqual(calls, [mcp.route.endpoint])
+  assert.doesNotMatch(JSON.stringify([shared, separate, denied, chosen]), /test-model|test-denied|test-media/)
+})
+test('provider aliases also group generically, and missing keys stay separate', async () => {
+  const data = ['primary','alias','missing-a','missing-b'].map((id, i) => ({
+    id, canonical:'deepseek', settings:i < 2 ? {apiKey:'test-ds'} : {},
+  }))
+  let calls = 0
+  const read = quotaService({provider:{list:async () => ({data})}, integration:{connection:{active:async () => undefined}}},
+    () => [], async () => { calls++; return Response.json({balance_infos:[{currency:'CNY',total_balance:0}]}) })
+  const groups = await read('deepseek')
+  assert.deepEqual(groups.map(g => g.sources), [['primary','alias'],['missing-a'],['missing-b']])
+  assert.equal(calls, 1)
+  assert.equal(groups[0].values[0].remaining, 0)
+  assert.ok(groups.slice(1).every(g => g.problem && !g.values))
 })
 test('media records are idempotent, paginated, date-bound and contain no prompts or media', async () => {
   const data = new Map()
