@@ -1,6 +1,6 @@
 # OpenCodex · OpenCode Desktop 插件合集
 
-适用于 **Windows 和 macOS 的 OpenCode 2 Desktop**。可以按需增强代码块、阅读右栏 Markdown 文件、跳转到历史提示词、选择中英文字体，或查看用量和剩余额度。日常使用的插件已完成 Windows 原生桌面版迁移，macOS 的开发和回归验证基线为 Desktop 2.3.2。
+适用于 **Windows 和 macOS 的 OpenCode 2 Desktop**。可以按需增强代码块、阅读右栏 Markdown 文件、跳转到历史提示词、选择中英文字体，或查看用量和剩余额度。日常使用的插件已完成 Windows 原生桌面版迁移，代码块增强和钱包已在 macOS Desktop 2.4.0 验收，并保留对 2.3.2 的兼容性。
 
 - [功能需求与开发顺序](REQUIREMENTS.md)
 - [逐项可行性与源码依据](FEASIBILITY.md)
@@ -13,12 +13,12 @@
 
 | 编号 | 组件 | 当前状态 |
 |---|---|---|
-| 02 | [代码块增强](projects/code-block-enhancer/README.md) | `0.1.0-alpha.8` · 限高滚动、行号、换行、Diff 对照与复制 |
+| 02 | [代码块增强](projects/code-block-enhancer/README.md) | `0.1.0-alpha.9` · 使用 2.4.0 原生换行与复制，保留限高滚动、行号和 Diff 对照 |
 | 03 | [对话 Markdown 排版](projects/markdown-presentation/README.md) | 暂缓。右侧文件阅读见 08 |
 | 04 | [Compact 自动折叠](projects/compact-auto-collapse/README.md) | 随 05 完成试验，已作学习存档 |
 | 05 | [任务执行过程折叠](projects/execution-timeline/README.md) | 插件与前端补丁已作学习存档，独立试用版已退役 |
 | 06 | [缓存与生成速度监控](projects/session-metrics/README.md) | `0.1.0-alpha.4` · 实时缓存命中率、TPS 和上下文占用，窄窗口自动隐藏 |
-| 07 | [用量与剩余额度](projects/provider-quota/README.md) | `0.1.0-alpha.7` · 多个连接共用额度接口和 Key 时合并显示，不同 Key 分列。支持 MiMo 中国区个人 Token Plan 官方余量 |
+| 07 | [用量与剩余额度](projects/provider-quota/README.md) | `0.1.0-alpha.8` · 服务商卡片可排序，同一服务商内按额度连接分组。支持 MiMo 中国区个人 Token Plan 官方余量 |
 | 08 | [Markdown 阅读器](projects/file-review-enhancer/README.md) | `0.1.0-alpha.5` · 从右侧文件树阅读，支持脚注往返、可读链接和公式。文字表格随栏宽换行，宽表可在表格内横移 |
 | 09 | [中英文字体](projects/bilingual-fonts/README.md) | `0.1.0-alpha.1` · 分别设置中西文字体，偏好保存在本机 |
 | 10 | [提示词快捷导航](projects/prompt-navigation/README.md) | `0.1.0-alpha.4` · 左侧提示词刻度、标星与跳转，支持长对话 |

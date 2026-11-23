@@ -23,6 +23,7 @@ __export(plugin_exports, {
 });
 module.exports = __toCommonJS(plugin_exports);
 var import_gui = require("@opencode/plugin/gui");
+var import_effect = require("effect");
 var import_solid_js = require("solid-js");
 
 // src/contract.js
@@ -64,6 +65,24 @@ var contract = {
     }
   }
 };
+
+// src/order.js
+function displayedFamilies(preference, available) {
+  const visible = new Set(available);
+  return [.../* @__PURE__ */ new Set([...preference.filter((id) => visible.has(id)), ...available])];
+}
+function moveFamily(preference, available, id, step) {
+  const visible = displayedFamilies(preference, available);
+  const index = visible.indexOf(id);
+  const neighbor = visible[index + step];
+  if (index < 0 || !neighbor || Math.abs(step) !== 1) return preference;
+  const all = [.../* @__PURE__ */ new Set([...preference, ...available])];
+  const from = all.indexOf(id);
+  const to = all.indexOf(neighbor);
+  all[from] = neighbor;
+  all[to] = id;
+  return all;
+}
 
 // src/style.css
 var style_default = `.pq-page {
@@ -361,8 +380,49 @@ function dashboard(ctx, session) {
     return select;
   }
   let configured = [], discovered = false, inventorySerial = 0;
+  const order = ctx.stores.displayOrder;
+  let sorting = false, sortButton, refreshAll;
   const has = (id) => configured.some((row) => row.family === id);
-  const options = () => configured.map((row) => [row.family, families[row.family]]);
+  const available = () => configured.map((row) => row.family);
+  const sorted = () => displayedFamilies(order.value?.ids ?? [], available());
+  const options = () => sorted().map((id) => [id, families[id]]);
+  function drawOrder() {
+    const ids = sorted();
+    const focused = content.contains(document.activeElement) ? document.activeElement : null;
+    const rows = ids.map((id, index2) => {
+      const row = el("div", null, "pq-card pq-top");
+      const arrows = el("div", null, "pq-top");
+      row.append(el("h3", families[id]), arrows);
+      for (const [direction, symbol, label] of [[-1, "\u2191", "\u4E0A\u79FB"], [1, "\u2193", "\u4E0B\u79FB"]]) {
+        const button = btn(symbol, () => order.update((draft) => {
+          draft.ids = moveFamily(draft.ids, available(), id, direction);
+        }));
+        button.dataset.family = id;
+        button.dataset.step = direction;
+        button.disabled = !ids[index2 + direction];
+        button.title = label + " " + families[id];
+        button.setAttribute("aria-label", button.title);
+        arrows.append(button);
+      }
+      return row;
+    });
+    content.replaceChildren(...rows);
+    if (focused?.dataset.family) {
+      const moves = [...content.querySelectorAll("button:enabled")].filter((b) => b.dataset.family === focused.dataset.family);
+      const next = moves.find((b) => b.dataset.step === focused.dataset.step) ?? moves[0] ?? sortButton;
+      next?.focus();
+    }
+  }
+  (0, import_solid_js.createEffect)((0, import_solid_js.on)(() => [...order.value?.ids ?? []], () => {
+    if (index === "quota") sorting ? drawOrder() : drawQuotas();
+    else {
+      const select = controls.querySelector('select[aria-label="\u6A21\u578B\u670D\u52A1\u5546"]');
+      if (select) {
+        select.replaceChildren(new Option("\u5168\u90E8\u670D\u52A1\u5546", ""), ...options().map(([id, name]) => new Option(name, id)));
+        select.value = filter;
+      }
+    }
+  }, { defer: true }));
   function drawUsage() {
     if (!discovered || !configured.length || index !== "usage") return;
     if (!stats) return;
@@ -425,6 +485,8 @@ function dashboard(ctx, session) {
   }
   function drawQuotas() {
     if (!alive || index !== "quota") return;
+    if (refreshAll) refreshAll.disabled = busy.size > 0 || !configured.some((r) => !unavailable[r.family]);
+    if (sorting) return;
     const cards = options().map(([id, name]) => {
       const card = el("section", null, "pq-card"), top = el("div", null, "pq-top");
       top.append(el("h3", name));
@@ -454,8 +516,6 @@ function dashboard(ctx, session) {
       return card;
     });
     content.replaceChildren(...cards);
-    const all = controls.querySelector("button");
-    if (all) all.disabled = busy.size > 0 || !configured.some((r) => !unavailable[r.family]);
   }
   async function refresh(id, source) {
     if (unavailable[id] || !has(id)) return;
@@ -495,6 +555,8 @@ function dashboard(ctx, session) {
   }
   function switchTo(i, refreshAccounts = configured) {
     cancelUsage();
+    if (i !== "quota" || configured.length < 2) sorting = false;
+    refreshAll = sortButton = void 0;
     index = i;
     buttons.forEach((b, n) => b.setAttribute("aria-pressed", String(i === keys[n])));
     controls.replaceChildren();
@@ -530,7 +592,20 @@ function dashboard(ctx, session) {
       void readUsage();
       clock = setInterval(readUsage, 6e4);
     } else {
-      controls.append(btn("\u5237\u65B0\u5168\u90E8\u989D\u5EA6", () => Promise.all(configured.map((r) => refresh(r.family)))));
+      if (configured.length > 1) {
+        sortButton = btn(sorting ? "\u5B8C\u6210\u6392\u5E8F" : "\u6392\u5E8F", () => {
+          sorting = !sorting;
+          sortButton.textContent = sorting ? "\u5B8C\u6210\u6392\u5E8F" : "\u6392\u5E8F";
+          refreshAll.hidden = sorting;
+          if (sorting) drawOrder();
+          else drawQuotas();
+        });
+        controls.append(sortButton);
+      }
+      refreshAll = btn("\u5237\u65B0\u5168\u90E8\u989D\u5EA6", () => Promise.all(configured.map((r) => refresh(r.family))));
+      refreshAll.hidden = sorting;
+      controls.append(refreshAll);
+      if (sorting) drawOrder();
       drawQuotas();
       for (const row of refreshAccounts) void refresh(row.family);
     }
@@ -577,6 +652,7 @@ function dashboard(ctx, session) {
   return (0, import_solid_js.createComponent)(ctx.ui.Dialog, { title: session.location ? "\u7528\u91CF\u4E0E\u989D\u5EA6" : "\u7528\u91CF\u4E0E\u989D\u5EA6 \xB7 \u672C\u673A\u5168\u5C40", size: "large", children: root });
 }
 var plugin_default = import_gui.Plugin.define({
+  stores: { displayOrder: import_gui.Store.global(import_effect.Schema.Struct({ ids: import_effect.Schema.Array(import_effect.Schema.String) }), { ids: [] }) },
   setup(ctx) {
     ctx.add(import_gui.Style, style_default);
     const draft = () => ctx.router.path().split("?")[0] === "/new-session";

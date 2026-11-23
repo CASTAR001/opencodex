@@ -106,7 +106,7 @@ function numberLines(pre, gutter) {
 function scrollThumb(fence, pre, track) {
   const thumb = document.createElement('div')
   track.append(thumb)
-  let watching = false, grab, frame = 0
+  let watching = false, grab, content, frame = 0
   function draw() {
     frame = 0
     const full = pre.scrollHeight, view = pre.clientHeight, height = track.clientHeight
@@ -118,17 +118,24 @@ function scrollThumb(fence, pre, track) {
   }
   function schedule() { if (!frame) frame = requestAnimationFrame(draw) }
   const resize = new ResizeObserver(schedule)
+  function observeContent() {
+    if (content === pre.firstElementChild) return
+    if (content) resize.unobserve(content)
+    content = pre.firstElementChild
+    if (content) resize.observe(content)
+  }
   function start() {
     if (watching) return
     watching = true
     resize.observe(pre)
-    if (pre.firstElementChild) resize.observe(pre.firstElementChild)
+    observeContent()
     pre.addEventListener('scroll', schedule, {passive:true})
     draw()
   }
   function stop() {
     watching = false
     resize.disconnect()
+    content = undefined
     pre.removeEventListener('scroll', schedule)
     cancelAnimationFrame(frame)
     frame = 0
@@ -158,7 +165,7 @@ function scrollThumb(fence, pre, track) {
   const blur = event => { if (!fence.contains(event.relatedTarget) && !fence.matches(':hover') && grab === undefined) stop() }
   fence.addEventListener('focusout', blur)
   if (fence.matches(':hover, :focus-within')) start()
-  return { changed() { if (watching) schedule() }, dispose() {
+  return { changed() { if (watching) { observeContent(); schedule() } }, dispose() {
     stop()
     fence.removeEventListener('pointerenter', start)
     fence.removeEventListener('pointerleave', leave)
@@ -181,6 +188,21 @@ function iconButton(name) {
   return { button, path }
 }
 
+// Desktop 2.3 has no wrap control. Newer hosts own the setting, button and per-fence override.
+function legacyWrapButton(changed) {
+  const { button, path } = iconButton('wrap')
+  let wrapped = true
+  button.onclick = () => { wrapped = !wrapped; changed() }
+  return { button, render(labels) {
+    button.setAttribute('aria-pressed',String(wrapped))
+    button.setAttribute('aria-label',labels.wrap)
+    button.title = wrapped ? labels.keepLines : labels.wrap
+    path.setAttribute('d', wrapped
+      ? 'M2 3.5h12 M2 7.5h9.5a2.5 2.5 0 0 1 0 5h-4 M9.5 10.5l-2 2 2 2 M2 12.5h2.5'
+      : 'M2 3.5h8 M2 8h12 M11.5 5.5 14 8l-2.5 2.5 M2 12.5h8')
+  } }
+}
+
 function mountControls(header, fence, language) {
   const nativePre = fence.querySelector(':scope > pre')
   const model = language === 'Diff' ? parsePatch(nativePre.textContent) : undefined
@@ -191,30 +213,23 @@ function mountControls(header, fence, language) {
   const number = iconButton('numbers')
   number.path.setAttribute('d','M2 2.5h1v3 M1.8 5.5h2.4 M1.7 9c.4-1.4 2.8-1.2 2.8.4 0 .9-1.7 1.8-2.6 3.1h2.8 M7 4h7 M7 8h7 M7 12h7')
   number.button.disabled = !!model && !model.numbered
-  const wrap = iconButton('wrap')
-  header.replaceChildren(title, number.button, wrap.button)
+  const legacyWrap = fence.querySelector(':scope > [data-slot="markdown-code-toolbar"]') ? undefined
+    : legacyWrapButton(() => { render(); numbering?.schedule(); scroll.changed() })
+  header.replaceChildren(title, number.button)
+  if (legacyWrap) header.append(legacyWrap.button)
   header.dataset.ocxCodeHeader = ''
   const track = document.createElement('div')
   track.dataset.ocxScrollTrack = ''
   track.setAttribute('aria-hidden','true')
   header.after(track)
-  let review = false, numbered = false, wrapped = true
-  let diff, copy, gutter, numbering, labels
+  let review = false, numbered = false
+  let diff, gutter, numbering, labels
   if (patch) {
     diff = iconButton('diff')
     diff.path.setAttribute('d','M3 5.5h10 M8 1v9 M3 13.5h10')
     number.button.before(diff.button)
-    // Delegate to the native copy action with the untouched original code still in place.
-    copy = iconButton('copy')
-    copy.button.removeAttribute('data-ocx-toggle')
-    copy.button.dataset.ocxCopyPatch = ''
-    copy.path.setAttribute('d','M6 5.5V3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-2.5 M3 5.5h6.5a1 1 0 0 1 1 1V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z')
-    const check = document.createElementNS(copy.path.namespaceURI, 'path')
-    check.dataset.ocxCopyCheck = ''
-    check.setAttribute('d','M2.5 8.5 6.5 12 14 4')
-    copy.path.after(check)
-    copy.button.onclick = () => fence.querySelector(':scope > [data-slot="markdown-copy-button"] button')?.click()
-    header.after(copy.button, pre)
+    // Both hosts copy the first code element in the fence. Keep their original pre in place.
+    header.after(pre)
     patch.show(false)
     diff.button.onclick = () => { review = !review; patch.show(review); render(); scroll.changed() }
   } else {
@@ -235,18 +250,11 @@ function mountControls(header, fence, language) {
       diff.button.setAttribute('aria-label', labels.diff)
       diff.button.setAttribute('aria-pressed', String(review))
       diff.button.title = review ? labels.hideDiff : labels.diff
-      copy.button.setAttribute('aria-label', labels.copyPatch)
-      copy.button.title = labels.copyPatch
     }
     number.button.setAttribute('aria-pressed',String(numbered))
     number.button.setAttribute('aria-label',labels.numbers)
     number.button.title = number.button.disabled ? labels.noCoordinates : numbered ? labels.hideNumbers : labels.numbers
-    wrap.button.setAttribute('aria-pressed',String(wrapped))
-    wrap.button.setAttribute('aria-label',labels.wrap)
-    wrap.button.title = wrapped ? labels.keepLines : labels.wrap
-    wrap.path.setAttribute('d', wrapped
-      ? 'M2 3.5h12 M2 7.5h9.5a2.5 2.5 0 0 1 0 5h-4 M9.5 10.5l-2 2 2 2 M2 12.5h2.5'
-      : 'M2 3.5h8 M2 8h12 M11.5 5.5 14 8l-2.5 2.5 M2 12.5h8')
+    legacyWrap?.render(labels)
   }
   number.button.onclick = () => {
     numbered = !numbered
@@ -258,11 +266,10 @@ function mountControls(header, fence, language) {
     render()
     scroll.changed()
   }
-  wrap.button.onclick = () => { wrapped = !wrapped; render(); numbering?.schedule(); scroll.changed() }
   return {
     labels(value) { labels = value; render() },
     dispose() {
-      numbering?.stop(); patch?.pre.remove(); copy?.button.remove(); gutter?.remove()
+      numbering?.stop(); patch?.pre.remove(); gutter?.remove()
       scroll.dispose(); cancelAnimationFrame(mountFrame); release?.()
     }
   }

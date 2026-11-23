@@ -22,7 +22,7 @@
   /* One shared grid row lets the sticky controls travel to the end of this fence.
      The native Copy and any other registered actions retain their host locations. */
   > [data-slot="markdown-code-content"] { display: contents; }
-  &::before, & [data-ocx-code-header], > :is([data-slot="markdown-copy-button"], [data-slot="markdown-code-actions"]) {
+  &::before, & [data-ocx-code-header], > :is([data-slot="markdown-code-toolbar"], [data-slot="markdown-copy-button"], [data-slot="markdown-code-actions"]) {
     grid-row: 1;
     align-self: start;
     position: sticky;
@@ -42,17 +42,18 @@
   > [data-slot="markdown-code-actions"] { grid-column: 2; gap: var(--ocx-button-gap); }
   > [data-slot="markdown-code-actions"]:not(:empty) { margin-inline-start: var(--ocx-button-gap); }
   > [data-slot="markdown-copy-button"] > * { display: flex; align-items: center; }
-  > [data-slot="markdown-copy-button"] button {
+  :is([data-slot="markdown-copy-button"], [data-slot="markdown-wrap-button"]) button {
     box-sizing: border-box; width: var(--ocx-button-size); height: var(--ocx-button-size);
     display: grid; place-items: center; padding: 0;
   }
-  > [data-slot="markdown-copy-button"] { grid-column: 3; margin-inline: var(--ocx-button-gap) 10px; }
-  > :is([data-slot="markdown-copy-button"], [data-slot="markdown-code-actions"]) {
+  > :is([data-slot="markdown-code-toolbar"], [data-slot="markdown-copy-button"]) { grid-column: 3; gap: var(--ocx-button-gap); margin-inline: var(--ocx-button-gap) 10px; }
+  > :is([data-slot="markdown-code-toolbar"], [data-slot="markdown-copy-button"], [data-slot="markdown-code-actions"]) {
     inset-inline-end: auto;
     display: flex;
     align-items: center;
     height: var(--ocx-head-height);
     opacity: 1;
+    pointer-events: auto;
     justify-self: end;
   }
   pre:where([data-component="markdown-code"] > pre, [data-ocx-patch-view]), & [data-ocx-code-gutter] {
@@ -68,12 +69,13 @@
     border: 0;
     border-top: 0.5px solid transparent;
     border-radius: 0 0 8px 8px;
-    white-space: pre;
     overflow: auto;
     scrollbar-gutter: auto;
     scrollbar-width: thin;
     scrollbar-color: transparent transparent;
   }
+  /* Give ResizeObserver a measurable text box even when the outer pre is height-capped. */
+  > pre > code { display: block; }
 
   @supports selector(::-webkit-scrollbar) {
     pre:where([data-component="markdown-code"] > pre, [data-ocx-patch-view]) { scrollbar-color: auto; scrollbar-width: auto; }
@@ -123,24 +125,17 @@
   & [data-ocx-code-gutter] i::before { content: attr(data-line); }
 
   &:has([data-ocx-patch-view]) > pre { display: none; }
-  &:has([data-ocx-patch-view]) > [data-slot="markdown-copy-button"] { visibility: hidden; }
-  & [data-ocx-copy-patch] {
-    grid-area: 1 / 3; align-self: start; justify-self: end; position: sticky;
-    top: calc(var(--ocx-sticky-top) + (var(--ocx-head-height) - var(--ocx-button-size)) / 2);
-    margin: calc((var(--ocx-head-height) - var(--ocx-button-size)) / 2) 10px 0 var(--ocx-button-gap);
-    z-index: 2; color: var(--v2-text-text-muted);
-  }
-  & [data-ocx-copy-check] { display: none; }
-  &:has([data-slot="markdown-copy-button"][data-copied="true"]) [data-ocx-copy-patch] {
-    & path:first-child { display: none; }
-    & [data-ocx-copy-check] { display: block; }
+  /* The native overflow check reads the original pre synchronously, including for a Diff.
+     Expose its width for that measurement without contributing to the visible layout. */
+  &[data-code-measure]:has([data-ocx-patch-view]) > pre {
+    display: block; position: absolute; inset-inline: 0; visibility: hidden; pointer-events: none;
   }
   & [data-ocx-patch-view] {
     font-family: var(--font-family-mono, monospace); font-size: 13px; line-height: 20px;
     color: var(--text-base); text-align: start;
   }
   & [data-ocx-patch-lines] { display: block; min-width: 100%; width: max-content; }
-  &:has([data-ocx-toggle="wrap"][aria-pressed="true"]) [data-ocx-patch-lines] { width: auto; }
+
   & [data-ocx-hunk] { display: block; }
   & [data-ocx-hunk] + [data-ocx-hunk] {
     margin-block-start: .5lh; border-block-start: 1px dashed var(--v2-border-border-muted); padding-block-start: .5lh;
@@ -195,6 +190,14 @@
   }
 }
 
+:is([data-component="markdown"][data-code-wrap] [data-component="markdown-code"]:not([data-wrap="false"]),
+    [data-component="markdown-code"][data-wrap="true"],
+    [data-component="markdown-code"]:has([data-ocx-toggle="wrap"][aria-pressed="true"])) [data-ocx-patch-view] {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  & [data-ocx-patch-lines] { width: auto; }
+}
+
 [data-ocx-code-header] {
   display: flex;
   align-items: center;
@@ -209,7 +212,7 @@
 
   > span { margin-inline-end: auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 550; }
 }
-:is([data-ocx-code-header] > button, [data-ocx-copy-patch]) {
+[data-ocx-code-header] > button {
   flex: none;
   display: grid;
   place-items: center;

@@ -1,6 +1,6 @@
 {
   "name": "code-block-enhancer",
-  "version": "0.1.0-alpha.8",
+  "version": "0.1.0-alpha.9",
   "description": "Language labels and per-block soft wrapping for OpenCode Desktop Markdown",
   "license": "MIT",
   "exports": { "./gui-experimental": "./gui-experimental.cjs" },

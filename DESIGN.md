@@ -17,12 +17,12 @@ git clone --single-branch --branch plugins/code-block-enhancer https://github.co
 | 组件或工作区 | 所有权与阶段 |
 |---|---|
 | ux-integration | 源码证据、版本组合、跨插件验收与复跑入口 |
-| code-block-enhancer | 02 · 会话与右侧 Markdown 文件内的代码围栏。alpha.8 支持限高滚动、吸顶工具栏、逐块行号与换行，以及 Diff 片段和增删对照 |
+| code-block-enhancer | 02 · 会话与右侧 Markdown 文件内的代码围栏。alpha.9 支持 2.4.0 原生换行和复制，并保留吸顶、限高、行号和 Diff 对照 |
 | markdown-presentation | 03 · assistant 正文的排版。第一批后续 |
 | compact-auto-collapse | 04 · 压缩摘要。第三批，先评估原生 |
 | execution-timeline | 05 · 回合中间活动的展示。第三批 |
 | session-metrics | 06 · 会话顶栏常驻显示缓存命中率、跨模型实时 TPS 和上下文使用率，明细侧栏共享同一份会话数据。alpha.3 已完成安装验证。[开发计划](projects/session-metrics/PLAN.md) |
-| provider-quota | 07 · 对话顶栏的统计图标打开独立用量页，按当前连接显示服务商，用量从本机历史统计，账户额度由用户手动刷新。alpha.2 已通过本机验收。 |
+| provider-quota | 07 · 钱包按当前连接显示剩余额度，支持进入时查询和手动刷新，用量从宿主历史统计。alpha.8 支持服务商排序。 |
 | file-review-enhancer | 08 · 文件审阅缺口。第四批 |
 | bilingual-fonts | 09 · 独立的中西文字体设置页。初始跟随 OpenCode，用户选择保存在本机。 |
 | prompt-navigation | 10 · 按消息 ID 导航到用户提示，追加提示各有刻度。星标按会话保存，历史分页与跳转交给原生时间线。 |
