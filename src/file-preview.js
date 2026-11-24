@@ -42,7 +42,7 @@ export function filePreviewSlot(ctx, props) {
             })
             createEffect(() => {
               if (!ready()) return
-              const view = reader(ctx, () => files.get(path)?.content?.content ?? '', path, () => session)
+              const view = reader(ctx, () => files.get(path)?.content?.content ?? '', path, () => session, files)
               view.dataset.fileFind = 'document'
               holder.append(view)
               onCleanup(() => view.remove())

@@ -3,8 +3,10 @@ import { gfmFromMarkdown } from 'mdast-util-gfm'
 import { mathFromMarkdown } from 'mdast-util-math'
 import { gfm } from 'micromark-extension-gfm'
 import { math } from 'micromark-extension-math'
+import { cjkFriendlyExtension } from 'micromark-extension-cjk-friendly'
 
-const parser = { extensions: [gfm(), math()], mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()] }
+const parser = { extensions: [gfm(), math(), cjkFriendlyExtension()], mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()] }
+export const parseDocument = text => fromMarkdown(text, parser)
 const calloutLabels = { NOTE: '说明', TIP: '提示', IMPORTANT: '重要', WARNING: '警告', CAUTION: '注意' }
 
 export function linkName(href) {
@@ -38,12 +40,12 @@ function applyEdits(text, edits, start = 0, end = text.length) {
 }
 
 // Read source offsets from a real Markdown syntax tree. All replacements are display-only.
-export function projectDocument(text, scope, path = '') {
+export function projectDocument(text, scope, path = '', forExport = false) {
   const frontmatter = /^(?:\uFEFF)?---[ \t]*\r?\n([\s\S]*?)^(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/m
   const prefix = frontmatter.exec(text)
   const properties = prefix?.index === 0 ? prefix[1] : undefined
   if (properties !== undefined) text = text.slice(prefix[0].length)
-  const tree = fromMarkdown(text, parser)
+  const tree = parseDocument(text)
   const definitions = new Map()
   const destinations = new Map()
   const linkDefinitions = []
@@ -61,6 +63,17 @@ export function projectDocument(text, scope, path = '') {
   collect(tree)
   function rewrite(node, edits) {
     let value
+    if (!forExport && (node.type === 'strong' || node.type === 'emphasis')) {
+      const n = node.type === 'strong' ? 2 : 1
+      const start = node.position.start.offset, end = node.position.end.offset
+      const punctuation = /[\p{P}\p{S}]/u
+      const word = /[\p{L}\p{N}]/u
+      if ((word.test(text[start-1] ?? '') && punctuation.test(text[start+n])) ||
+          (word.test(text[end] ?? '') && punctuation.test(text[end-n-1]))) {
+        const tag = n === 2 ? 'strong' : 'em'
+        edits.push({start, end:start+n, value:'<' + tag + '>'}, {start:end-n, end, value:'</' + tag + '>'})
+      }
+    }
     if (node.type === 'blockquote') {
       const first = node.children[0]?.children?.[0]
       const marker = first?.type === 'text' && /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?=\r?\n|$)/.exec(slice(first))
@@ -97,7 +110,12 @@ export function projectDocument(text, scope, path = '') {
       }
     } else if (node.type === 'link' || node.type === 'linkReference') {
       const raw = slice(node)
-      const href = node.type === 'link' ? node.url : destinations.get(node.identifier)?.url
+      let href = node.type === 'link' ? node.url : destinations.get(node.identifier)?.url
+      let suffix = ''
+      if (/^https?:\/\//i.test(raw)) {
+        const boundary = raw.search(/[。！？，；、](?=[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]|$)/u)
+        if (boundary > 0) { href = raw.slice(0,boundary); suffix = raw.slice(boundary) }
+      }
       const labelNode = node.children.length === 1 && node.children[0]
       const bare = /^(?:<?https?:\/\/|www\.)/i.test(raw)
       if (/^https?:\/\//i.test(href ?? '') && (bare || (labelNode?.type === 'text' && labelNode.value === href))) {
@@ -106,7 +124,7 @@ export function projectDocument(text, scope, path = '') {
         const escapeLabel = label.replace(/[\\\[\]*_`<>&|~$!]/g, ch => '&#' + ch.codePointAt(0) + ';')
         if (bare) {
           const destination = href.replace(/[\\<>\s]/g, ch => encodeURIComponent(ch)).replaceAll('&', '&amp;')
-          value = '[' + escapeLabel + '](<' + destination + '>)'
+          value = '[' + escapeLabel + '](<' + destination + '>)' + suffix
         } else if (node.type === 'linkReference' && node.referenceType !== 'full') {
           value = '[' + escapeLabel + '][' + slice(labelNode) + ']'
         } else {
