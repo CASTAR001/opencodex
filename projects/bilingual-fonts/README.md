@@ -1,4 +1,4 @@
-# Bilingual Fonts · 中英文字体
+# 中英文字体
 
 OpenCode Desktop 的独立 GUI 插件。适配基线为 macOS OpenCode Desktop 2.3.2，当前版本为 `0.1.0-alpha.1`。
 

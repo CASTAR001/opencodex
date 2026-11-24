@@ -1,6 +1,6 @@
 # OpenCodex · OpenCode Desktop 插件合集
 
-适用于 **Windows 和 macOS 的 OpenCode 2 Desktop**。可以按需增强代码块、阅读右栏 Markdown 文件、跳转到历史提示词、选择中英文字体，或查看用量和剩余额度。日常使用的插件已完成 Windows 原生桌面版迁移，代码块增强和钱包已在 macOS Desktop 2.4.0 验收，并保留对 2.3.2 的兼容性。
+适用于 **Windows 和 macOS 的 OpenCode 2 Desktop**。在对话中可以区分工具调用与最终回复、查看带行号的代码、跳回某条提示词，以及查看缓存命中率、生成速度和剩余额度。右侧文件树中的 Markdown 可以直接阅读和导出。Windows 原生桌面版已完成此前在用插件的迁移，近期的右栏 PDF 导出和扩展名称以 macOS Desktop 2.4.0 做了隔离验证。
 
 - [功能需求与开发顺序](REQUIREMENTS.md)
 - [逐项可行性与源码依据](FEASIBILITY.md)
@@ -14,8 +14,8 @@
 | 编号 | 组件 | 当前状态 |
 |---|---|---|
 | 02 | [代码块增强](projects/code-block-enhancer/README.md) | `0.1.0-alpha.9` · 使用 2.4.0 原生换行与复制，保留限高滚动、行号和 Diff 对照 |
-| 03 | [对话 Markdown 排版](projects/markdown-presentation/README.md) | `0.1.0` · 2.4.0 工具组甜橙圆点、成功回复分隔线与中英混排修复 |
-| 04 | [Compact 自动折叠](projects/compact-auto-collapse/README.md) | 随 05 完成试验，已作学习存档 |
+| 03 | [对话正文增强](projects/markdown-presentation/README.md) | `0.1.0` · 2.4.0 工具组甜橙圆点、成功回复分隔线与中英混排修复 |
+| 04 | [上下文压缩折叠](projects/compact-auto-collapse/README.md) | 随 05 完成试验，已作学习存档 |
 | 05 | [任务执行过程折叠](projects/execution-timeline/README.md) | 插件与前端补丁已作学习存档，独立试用版已退役 |
 | 06 | [缓存与生成速度监控](projects/session-metrics/README.md) | `0.1.0-alpha.4` · 实时缓存命中率、TPS 和上下文占用，窄窗口自动隐藏 |
 | 07 | [用量与剩余额度](projects/provider-quota/README.md) | `0.1.0-alpha.8` · 服务商卡片可排序，同一服务商内按额度连接分组。支持 MiMo 中国区个人 Token Plan 官方余量 |
@@ -23,7 +23,7 @@
 | 09 | [中英文字体](projects/bilingual-fonts/README.md) | `0.1.0-alpha.1` · 分别设置中西文字体，偏好保存在本机 |
 | 10 | [提示词快捷导航](projects/prompt-navigation/README.md) | `0.1.0-alpha.4` · 左侧提示词刻度、标星与跳转，支持长对话 |
 | 11 | [项目文件夹整理](projects/project-sidebar/README.md) | **已弃用** · 最后版本 `0.1.0-alpha.3`。侧边标签页使用 OpenCode 原生项目分组 |
-| 12 | [插件中文名称](projects/plugin-labels-zh/README.md) | `0.1.1` · 在本机扩展列表显示中文名，保留原插件 ID 和原生操作 |
+| 12 | [插件中文名称](projects/plugin-labels-zh/README.md) | `0.1.2` · 扩展列表默认显示中文，包含「对话文件右栏临时修复」。悬停名称可查看原插件 ID |
 | 13 | [对话文件右栏临时修复](projects/session-file-reveal/README.md) | `0.1.0` · 点击回复中的本地文件时展开右栏。仅在 Desktop 2.3.2 启用，已在 macOS 验收 |
 
 ## 在 Windows 和 macOS 上安装
@@ -47,6 +47,10 @@
 2. 准备发行包。除 Markdown 阅读器外，上述组件均已附带 GUI 成品，可直接运行 `npm pack --ignore-scripts`。**Markdown 阅读器**在其组件目录先运行 `npm ci --include=dev`，再运行 `npm pack`，由打包脚本生成 `dist/`。Windows PowerShell 可用 `npm.cmd` 执行相同命令。
 3. 解开生成的 `.tgz`（两端都可运行 `tar -xf <包文件名.tgz>`），将其中的 `package` 文件夹改名为插件 ID，再放入上表的插件目录。例如代码块增强的清单应在 `plugins/code-block-enhancer/package.json`。保留包内的目录结构，以便额度插件加载服务端和 RPC、Markdown 阅读器加载服务端和随包技能。
 4. 下次打开 Desktop 后，在「设置 → 扩展 → 插件」确认已加载。装了「插件中文名称」时，悬停名称可查看原 ID。字体在本机的「设置 → 中英文字体」中选择，终端字体在「设置 → 外观」中选择。
+
+## 导出右栏 Markdown
+
+从右侧文件树打开 `.md` 文件，调好栏宽，在阅读页右上角选择「导出为」。**PDF** 沿用当前主题、实际字体、代码高亮和栏宽，按 A4 分页。长代码完整展开，已开启的行号也会打印。**HTML** 适合离线阅读，**Word（.docx）** 适合继续编辑，需要本机安装 Pandoc 3。
 
 ## 安装验证
 
