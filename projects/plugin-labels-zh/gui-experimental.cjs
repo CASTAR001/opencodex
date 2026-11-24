@@ -6,6 +6,7 @@ const names = new Map(Object.entries({
   'code-block-enhancer': '代码块增强',
   'cream-orange-theme': '奶油甜橙主题',
   'file-review-enhancer': 'Markdown 阅读器',
+  'markdown-presentation': '对话正文增强',
   'plugin-labels-zh': '插件中文名称',
   'project-sidebar': '项目文件夹整理（已弃用）',
   'prompt-navigation': '提示词快捷导航',

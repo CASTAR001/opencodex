@@ -3,15 +3,16 @@ import { insert } from 'solid-js/web'
 import { projectDocument } from './document.js'
 import { bindFootnotes } from './navigation.js'
 import { bindWebLinks } from './links.js'
+import { exportMenu } from './export-menu.js'
 
-export function reader(ctx, source, path, session) {
+export function reader(ctx, source, path, session, files) {
   const rail = document.createElement('div')
   rail.dataset.readerScroll = ''
   const article = document.createElement('article')
   article.dataset.ocxReader = ''
   const scope = 'ocx-fn-' + crypto.randomUUID()
   article.dataset.noteScope = scope
-  rail.append(article)
+  rail.append(exportMenu(ctx,source,path,files),article)
   const model = createMemo(() => projectDocument(source(), scope, path))
   const markdown = getText => createComponent(ctx.ui.Markdown, { get text() { return getText() } })
   const body = document.createElement('div')

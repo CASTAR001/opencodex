@@ -45,7 +45,7 @@ function content(ctx, props) {
     const path = selected()
     const result = status()
     if (!path || result !== path) return result
-    return reader(ctx, () => props.screen.file.get(path)?.content?.content ?? '', path, () => props.session)
+    return reader(ctx, () => props.screen.file.get(path)?.content?.content ?? '', path, () => props.session, props.screen.file)
   })
   return container
 }

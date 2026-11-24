@@ -14,21 +14,21 @@
 | 编号 | 组件 | 当前状态 |
 |---|---|---|
 | 02 | [代码块增强](projects/code-block-enhancer/README.md) | `0.1.0-alpha.9` · 使用 2.4.0 原生换行与复制，保留限高滚动、行号和 Diff 对照 |
-| 03 | [对话 Markdown 排版](projects/markdown-presentation/README.md) | 暂缓。右侧文件阅读见 08 |
+| 03 | [对话 Markdown 排版](projects/markdown-presentation/README.md) | `0.1.0` · 2.4.0 工具组甜橙圆点、成功回复分隔线与中英混排修复 |
 | 04 | [Compact 自动折叠](projects/compact-auto-collapse/README.md) | 随 05 完成试验，已作学习存档 |
 | 05 | [任务执行过程折叠](projects/execution-timeline/README.md) | 插件与前端补丁已作学习存档，独立试用版已退役 |
 | 06 | [缓存与生成速度监控](projects/session-metrics/README.md) | `0.1.0-alpha.4` · 实时缓存命中率、TPS 和上下文占用，窄窗口自动隐藏 |
 | 07 | [用量与剩余额度](projects/provider-quota/README.md) | `0.1.0-alpha.8` · 服务商卡片可排序，同一服务商内按额度连接分组。支持 MiMo 中国区个人 Token Plan 官方余量 |
-| 08 | [Markdown 阅读器](projects/file-review-enhancer/README.md) | `0.1.0-alpha.5` · 从右侧文件树阅读，支持脚注往返、可读链接和公式。文字表格随栏宽换行，宽表可在表格内横移 |
+| 08 | [Markdown 阅读器](projects/file-review-enhancer/README.md) | `0.1.0-alpha.6` · 右栏阅读、脚注往返、文字表格适应栏宽，支持 HTML、PDF 与可编辑 Word 导出（Word 需要 Pandoc） |
 | 09 | [中英文字体](projects/bilingual-fonts/README.md) | `0.1.0-alpha.1` · 分别设置中西文字体，偏好保存在本机 |
 | 10 | [提示词快捷导航](projects/prompt-navigation/README.md) | `0.1.0-alpha.4` · 左侧提示词刻度、标星与跳转，支持长对话 |
 | 11 | [项目文件夹整理](projects/project-sidebar/README.md) | **已弃用** · 最后版本 `0.1.0-alpha.3`。侧边标签页使用 OpenCode 原生项目分组 |
-| 12 | [插件中文名称](projects/plugin-labels-zh/README.md) | `0.1.0` · 在本机扩展列表显示中文名，保留原插件 ID 和原生操作 |
+| 12 | [插件中文名称](projects/plugin-labels-zh/README.md) | `0.1.1` · 在本机扩展列表显示中文名，保留原插件 ID 和原生操作 |
 | 13 | [对话文件右栏临时修复](projects/session-file-reveal/README.md) | `0.1.0` · 点击回复中的本地文件时展开右栏。仅在 Desktop 2.3.2 启用，已在 macOS 验收 |
 
 ## 在 Windows 和 macOS 上安装
 
-首次安装可从上表的 **02、06、07、08、09、10、12** 中按需选择。使用 Desktop 2.3.2 时可额外安装 **13**。下表列出 Desktop 使用本机后台时的默认全局插件目录。
+首次安装可从上表的 **02、03、06、07、08、09、10、12** 中按需选择。使用 Desktop 2.3.2 时可额外安装 **13**。下表列出 Desktop 使用本机后台时的默认全局插件目录。
 
 | 平台 | 插件目录 |
 |---|---|

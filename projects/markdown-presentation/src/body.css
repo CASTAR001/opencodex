@@ -1,0 +1,15 @@
+[data-timeline-row] [data-component="collapsed-tool-group"] [data-component="context-tool-group-trigger"] > [data-slot="context-tool-group-title"]::before {
+  content: ""; display: inline-block; flex: none; align-self: center; vertical-align: .12em;
+  inline-size: .48em; block-size: .48em; margin-inline-end: .5em;
+  border-radius: 50%; background: var(--cream-orange-selection, #eea366);
+}
+[data-ocx-completed] > [data-slot="text-part-body"]::before {
+  content: "已完成"; display: block; text-align: center; font: inherit; font-weight: 700;
+  margin-block: .4em .75em; color: var(--v2-text-text-muted, currentColor);
+  background: linear-gradient(var(--v2-border-border-muted, #bdb6ad) 0 0) left center / calc(50% - 2.4em) 1px no-repeat,
+              linear-gradient(var(--v2-border-border-muted, #bdb6ad) 0 0) right center / calc(50% - 2.4em) 1px no-repeat;
+  user-select: none;
+}
+[data-timeline-row] [data-slot="session-turn-assistant-content"] [data-component="markdown"] :is(p, td, th) {
+  line-break: auto; overflow-wrap: break-word;
+}

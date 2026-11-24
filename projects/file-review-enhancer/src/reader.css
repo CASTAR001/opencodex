@@ -1,4 +1,9 @@
 .ocx-reader-panel, [data-reader-scroll] { height: 100%; min-height: 0; min-width: 0; }
+.ocx-reader-export { display:flex; justify-content:flex-end; position:relative; margin:.3rem .6rem -.6rem; z-index:1; }
+.ocx-reader-export button { display:inline-flex; align-items:center; padding:.36rem .55rem; border-radius:.35rem; color:var(--v2-text-text-muted); cursor:pointer; }
+.ocx-reader-export button:is(:hover,:focus-visible) { background:var(--v2-background-bg-layer-01); color:var(--v2-text-text-base); }
+.ocx-reader-export [role="menu"] { position:absolute; inset-inline-end:0; top:100%; padding:.25rem; border:1px solid var(--v2-border-border-muted); border-radius:.45rem; background:var(--v2-background-bg-base); box-shadow:0 3px 12px #0002; }
+.ocx-reader-export [role="menuitem"] { display:flex; width:100%; white-space:nowrap; }
 [data-ocx-file-preview] { display: none; }
 [data-ocx-file-preview]:has(> [data-reader-scroll] [data-component="markdown"]) { display: block; min-height: 0; min-width: 0; flex: 1; }
 [data-ocx-file-preview]:has(> [data-reader-scroll] [data-component="markdown"]) + [data-slot="artifact-document-stage"][data-kind="markdown"] { display: none; }
