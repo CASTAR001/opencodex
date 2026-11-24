@@ -5,16 +5,18 @@ const names = new Map(Object.entries({
   'bilingual-fonts': '中英文字体',
   'code-block-enhancer': '代码块增强',
   'cream-orange-theme': '奶油甜橙主题',
+  'execution-timeline': '对话折叠（已存档）',
   'file-review-enhancer': 'Markdown 阅读器',
   'markdown-presentation': '对话正文增强',
   'plugin-labels-zh': '插件中文名称',
   'project-sidebar': '项目文件夹整理（已弃用）',
   'prompt-navigation': '提示词快捷导航',
   'provider-quota': '用量与剩余额度',
+  'session-file-reveal': '对话文件右栏临时修复',
   'session-metrics': '缓存与生成速度监控',
 }))
 
-// 2.3.2 uses a bdi for local plugin IDs. MCP and skill rows have different markup.
+// Desktop 2.3.2 and 2.4.0 use a bdi for local plugin IDs. MCP and skill rows have different markup.
 const selector = '.settings-extensions-tabs .settings-extension-row .settings-provider-main > bdi.settings-extension-name'
 
 function localizeList() {
