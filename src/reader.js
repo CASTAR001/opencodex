@@ -12,7 +12,7 @@ export function reader(ctx, source, path, session, files) {
   article.dataset.ocxReader = ''
   const scope = 'ocx-fn-' + crypto.randomUUID()
   article.dataset.noteScope = scope
-  rail.append(exportMenu(ctx,source,path,files),article)
+  rail.append(exportMenu(ctx,source,path,files,article),article)
   const model = createMemo(() => projectDocument(source(), scope, path))
   const markdown = getText => createComponent(ctx.ui.Markdown, { get text() { return getText() } })
   const body = document.createElement('div')

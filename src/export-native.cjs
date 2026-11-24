@@ -1,5 +1,5 @@
 const {spawn} = require('node:child_process')
-const {open,rename,unlink,access} = require('node:fs/promises')
+const {open,rename,unlink,access,readFile} = require('node:fs/promises')
 const {constants} = require('node:fs')
 const {randomUUID} = require('node:crypto')
 const path = require('node:path')
@@ -62,23 +62,32 @@ async function word(html,signal) {
 // partition and serve only the active, unguessable document URLs, including large images.
 let printSession
 const pages = new Map()
+const fontRoute = /^https:\/\/export\.invalid\/fonts\/([\w-][\w.-]*\.(?:woff2?|ttf|otf))$/i
 function printer() {
   if (printSession) return printSession
   printSession = require('electron').session.fromPartition('ocx-reader-print-'+randomUUID(),{cache:false})
-  printSession.protocol.handle('https', req => {
+  printSession.protocol.handle('https', async req => {
+    const name = fontRoute.exec(req.url)?.[1]
+    if (name && pages.size) {
+      const assets = path.join(require('electron').app.getAppPath(),'out','renderer','assets')
+      try {
+        const bytes = await readFile(path.join(assets,name))
+        return new Response(bytes,{headers:{'Content-Type':'font/'+name.split('.').at(-1),'Cache-Control':'no-store'}})
+      } catch {return new Response(null,{status:404})}
+    }
     const html = pages.get(req.url)
     return html === undefined ? new Response(null,{status:404}) :
       new Response(html,{headers:{'Content-Type':'text/html;charset=utf-8','Cache-Control':'no-store',
-        'Content-Security-Policy':"default-src 'none'; img-src data:; style-src 'unsafe-inline'; form-action 'none'; base-uri 'none'"}})
+        'Content-Security-Policy':"default-src 'none'; script-src 'none'; img-src data:; font-src 'self'; style-src 'unsafe-inline'; form-action 'none'; base-uri 'none'"}})
   })
-  printSession.webRequest.onBeforeRequest((req,done)=>done({cancel:!(pages.has(req.url) || req.url.startsWith('data:'))}))
+  printSession.webRequest.onBeforeRequest((req,done)=>done({cancel:!(pages.has(req.url) || (pages.size && fontRoute.test(req.url)) || req.url.startsWith('data:'))}))
   printSession.setPermissionRequestHandler((_wc,_perm,callback)=>callback(false))
   return printSession
 }
 async function pdf(html,signal) {
   const {BrowserWindow} = require('electron')
   signal.throwIfAborted()
-  const win = new BrowserWindow({show:false,webPreferences:{session:printer(),sandbox:true,nodeIntegration:false,contextIsolation:true,javascript:false,webSecurity:true}})
+  const win = new BrowserWindow({show:false,webPreferences:{session:printer(),sandbox:true,nodeIntegration:false,contextIsolation:true,webSecurity:true}})
   const url = 'https://export.invalid/'+randomUUID()
   pages.set(url,html)
   const stop = () => {if(!win.isDestroyed())win.destroy()}
@@ -86,6 +95,14 @@ async function pdf(html,signal) {
   try {
     win.webContents.setWindowOpenHandler(()=>({action:'deny'}))
     await win.loadURL(url)
+    // Force layout before waiting: bundled math and unicode-range faces are lazy.
+    await win.webContents.executeJavaScriptInIsolatedWorld(1001,[{code:`
+      (async () => {
+        void document.body.offsetHeight
+        await Promise.all([document.fonts.ready, ...Array.from(document.images,image=>image.decode().catch(()=>{}))])
+        return true
+      })()
+    `}])
     return await win.webContents.printToPDF({pageSize:'A4',preferCSSPageSize:true,printBackground:true})
   } finally {signal.removeEventListener('abort',stop);pages.delete(url);stop()}
 }
