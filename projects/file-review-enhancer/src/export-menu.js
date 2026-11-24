@@ -1,6 +1,6 @@
 import {onCleanup} from 'solid-js'
 
-export function exportMenu(ctx, source, path, files) {
+export function exportMenu(ctx, source, path, files, article) {
   const toolbar = document.createElement('div')
   toolbar.className = 'ocx-reader-export'
   const trigger = document.createElement('button')
@@ -28,7 +28,10 @@ export function exportMenu(ctx, source, path, files) {
       try {
         const name = path.split('/').at(-1).replace(/\.md$/i,'.'+format)
         const {exportDocument,workspaceImage} = require('./export-document.js')
-        const html = await exportDocument(source(),path,url=>workspaceImage(files,url))
+        const image = url => workspaceImage(files,url)
+        const html = format === 'pdf'
+          ? await require('./print-snapshot.js').snapshotReader(article, name, image)
+          : await exportDocument(source(), path, image)
         if (!live) return
         if (format==='html') await ctx.system.save({name,content:html})
         else await ctx.main(require('./export-ipc.js').ExportIpc).save({name,html,format})

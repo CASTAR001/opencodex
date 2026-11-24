@@ -19,7 +19,7 @@
 | 05 | [任务执行过程折叠](projects/execution-timeline/README.md) | 插件与前端补丁已作学习存档，独立试用版已退役 |
 | 06 | [缓存与生成速度监控](projects/session-metrics/README.md) | `0.1.0-alpha.4` · 实时缓存命中率、TPS 和上下文占用，窄窗口自动隐藏 |
 | 07 | [用量与剩余额度](projects/provider-quota/README.md) | `0.1.0-alpha.8` · 服务商卡片可排序，同一服务商内按额度连接分组。支持 MiMo 中国区个人 Token Plan 官方余量 |
-| 08 | [Markdown 阅读器](projects/file-review-enhancer/README.md) | `0.1.0-alpha.6` · 右栏阅读、脚注往返、文字表格适应栏宽，支持 HTML、PDF 与可编辑 Word 导出（Word 需要 Pandoc） |
+| 08 | [Markdown 阅读器](projects/file-review-enhancer/README.md) | `0.1.0-alpha.7` · 右栏阅读、脚注往返与自适应表格。PDF 沿用当前主题、字体和栏宽，另支持离线 HTML 与可编辑 Word（需 Pandoc） |
 | 09 | [中英文字体](projects/bilingual-fonts/README.md) | `0.1.0-alpha.1` · 分别设置中西文字体，偏好保存在本机 |
 | 10 | [提示词快捷导航](projects/prompt-navigation/README.md) | `0.1.0-alpha.4` · 左侧提示词刻度、标星与跳转，支持长对话 |
 | 11 | [项目文件夹整理](projects/project-sidebar/README.md) | **已弃用** · 最后版本 `0.1.0-alpha.3`。侧边标签页使用 OpenCode 原生项目分组 |
