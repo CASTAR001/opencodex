@@ -25,10 +25,13 @@
 | 11 | [项目文件夹整理](projects/project-sidebar/README.md) | **已弃用** · 最后版本 `0.1.0-alpha.3`。侧边标签页使用 OpenCode 原生项目分组 |
 | 12 | [插件中文名称](projects/plugin-labels-zh/README.md) | `0.1.2` · 扩展列表默认显示中文，包含「对话文件右栏临时修复」。悬停名称可查看原插件 ID |
 | 13 | [对话文件右栏临时修复](projects/session-file-reveal/README.md) | `0.1.0` · 点击回复中的本地文件时展开右栏。仅在 Desktop 2.3.2 启用，已在 macOS 验收 |
+| 14 | [长对话稳定性增强](projects/long-conversation-loop/README.md) | `0.1.0-alpha.1` · 同一任务多次压缩后，恢复目标、追加要求和进度。macOS 2.4.0 隔离后台验证 |
 
 ## 在 Windows 和 macOS 上安装
 
 首次安装可从上表的 **02、03、06、07、08、09、10、12** 中按需选择。使用 Desktop 2.3.2 时可额外安装 **13**。下表列出 Desktop 使用本机后台时的默认全局插件目录。
+
+在同一会话持续做长任务的用户，可另选 **14**。它运行在 OpenCode 后台，打包方式见[组件说明](projects/long-conversation-loop/README.md#安装与停用)。
 
 | 平台 | 插件目录 |
 |---|---|
