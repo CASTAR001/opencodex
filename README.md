@@ -39,4 +39,26 @@ python3 -B test/host_probe.py /Applications/OpenCode.app/Contents/Resources/open
 
 固定回复模型会故意在摘要里丢掉目标和撤回授权。脚本比较原生与启用插件后的真实模型请求，覆盖连续手动压缩、默认后台摘要的采用、阈值触发的自动压缩、前后排队与取消、调用工具和重启原会话。测试使用临时配置与合成会话，进程退出时释放。它验证资料是否到达模型；真实模型持续遵循约定的比例和缓存开销仍待对照测量。
 
+### Kimi 与 MiMo 的首轮实测
+
+2026-11-25，macOS，OpenCode 2.4.0，插件 `0.1.0-alpha.1`。在隔离后台导入同一份 24 轮合成记录，再触发手动压缩。预先规定八项答案，按字段、值和类型逐一判分。原始外发授权被撤回，场地和预算在中途修改，纸样已验收，成品待验收。Kimi 在第一次压缩后又收到了更换联系人的要求。最后一次进度询问临时将交接份数改为一份。
+
+| 模型 | 压缩及作答条件 | 正确字段 |
+|---|---|---:|
+| Kimi K3.1 Pro | 原生摘要，两次压缩，插件关闭 | 8/8 |
+| Kimi K3.1 Pro | 原生摘要，两次压缩，插件开启 | 8/8 |
+| MiMo V2.6 Flash | 原生摘要，一次压缩，插件开启 | 8/8 |
+| Kimi K3.1 Pro | 将同一份末轮请求的原生摘要及其近期记录替换为缺项摘要，移除插件提醒 | 1/8 |
+| Kimi K3.1 Pro | 以上相同请求，保留插件提醒 | 7/8 |
+
+Kimi 在缺项摘要下单靠末轮要求答对了份数。加入提醒后，还答对目标、场地、预算、纸样回执、联系人和当前外发权限。第 3 条提示中的封签编号仅在归档中。另开一例允许一次回查，Kimi 选择了 `loop_recall`，查询串为「纸袋 封签 底纹 编号 seal」，没有匹配，最终填写 null。使用同一批归档在本地复核，单查「封签」或确切编号均能定位第 3 条。当前工具使用连续子串匹配，值得优先验证多词检索和未命中时的反馈。
+
+四个试验共取得 14 次成功的真实生成，其中 Kimi 12 次、MiMo 2 次。另有一次 Kimi 请求返回 HTTP 404，未取得回复，排除在评分外。为使用既有模型连接，测试通过 OpenCode 的一次性文本接口传送带角色标签的有序消息；回查专项把模型选择转换成工具调用，交给隔离后台执行。每个条件只测一次。这轮没有测自然耗尽上下文、服务商原生多角色传输、真实工具多次重试或账单缓存。
+
+复跑使用 [live_models.py](test/live_models.py)。先用 `opencode models` 找到目标模型前面的服务商 ID。以下以 Kimi 原生组为例，另外三组可选 `kimi-plugin`、`kimi-recall` 和 `mimo-plugin`。显式传入 `--live` 会使用所选模型的额度。
+
+```sh
+python3 -B test/live_models.py kimi-control --provider '你的服务商ID' --live
+```
+
 宿主机制可对照 [2.4.0 压缩实现](https://github.com/anomalyco/opencode/blob/44aed4fd144611879046ae923c25541f913780ad/packages/core/src/session/compaction.ts)、[事件定义](https://github.com/anomalyco/opencode/blob/44aed4fd144611879046ae923c25541f913780ad/packages/schema/src/session-event.ts) 和 [请求准备流程](https://github.com/anomalyco/opencode/blob/44aed4fd144611879046ae923c25541f913780ad/packages/core/src/session/model-request.ts)。
