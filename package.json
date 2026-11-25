@@ -1,0 +1,10 @@
+{
+  "name": "long-conversation-loop",
+  "version": "0.1.0-alpha.1",
+  "description": "长对话稳定性增强 · 在 OpenCode 压缩后保留当前会话的目标、追加要求和操作记录",
+  "license": "MIT",
+  "type": "module",
+  "exports": { "./server": "./src/server.js" },
+  "files": ["src", "skills"],
+  "scripts": { "test": "node --test test/*.test.js" }
+}
