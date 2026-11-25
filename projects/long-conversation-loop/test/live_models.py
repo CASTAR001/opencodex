@@ -85,7 +85,7 @@ def tool_entries(content):
 
 
 class LiveCalls:
-    def __init__(self, binary, provider, model, limit, cwd, check_recall):
+    def __init__(self, binary, provider, model, limit, cwd, check_recall, metered_generate=None):
         if model not in (KIMI, MIMO):
             raise ValueError('Unexpected live model')
         self.binary, self.provider, self.model, self.limit, self.cwd = binary, provider, model, limit, cwd
@@ -93,6 +93,7 @@ class LiveCalls:
         self.captured = []
         self.error = None
         self.check_recall = check_recall
+        self.metered_generate = metered_generate
         self.tool_requests = []
         self.fixed_summary_sent = False
 
@@ -110,6 +111,8 @@ class LiveCalls:
                   + json.dumps(messages, ensure_ascii=False, separators=(',', ':')))
         payload = {'model': {'providerID': self.provider, 'id': self.model}, 'prompt': prompt}
         self.calls += 1
+        if self.metered_generate is not None:
+            return self.metered_generate(prompt)
         request = subprocess.run([self.binary, 'api', 'POST', '/api/experimental/generate/text',
                                   '--data', json.dumps(payload, ensure_ascii=False), '--log-level', 'none'],
                                  capture_output=True, text=True, cwd=self.cwd, timeout=180)
@@ -179,7 +182,7 @@ class Relay(BaseHTTPRequestHandler):
         return {'role':'assistant','content':reply}, 'stop'
 
 
-def run_case(binary, provider, model, enabled, paired=False, check_recall=False):
+def run_case(binary, provider, model, enabled, paired=False, check_recall=False, metered_generate=None):
     with tempfile.TemporaryDirectory(prefix='ocx-semantic-', dir='/private/tmp') as directory:
         root = Path(directory)
         config = root/'config/opencode'
@@ -192,7 +195,7 @@ def run_case(binary, provider, model, enabled, paired=False, check_recall=False)
                 shutil.copytree(PACKAGE/name, package/name)
             shutil.copyfile(PACKAGE/'package.json', package/'package.json')
         limit = (4 if model == KIMI and not check_recall else 2) + (2 if paired else 0)
-        calls = LiveCalls(binary, provider, model, limit, root/'workspace', check_recall)
+        calls = LiveCalls(binary, provider, model, limit, root/'workspace', check_recall, metered_generate)
         with ThreadingHTTPServer(('127.0.0.1', 0), Relay) as relay:
             relay.calls = calls
             threading.Thread(target=relay.serve_forever, daemon=True).start()
