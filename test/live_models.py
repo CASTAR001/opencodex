@@ -70,6 +70,20 @@ def score(text, expected):
         k for k, v in expected.items() if type(response.get(k)) is type(v) and response[k] == v]
 
 
+def tool_entries(content):
+    """Unwrap the text blocks from this probe's single archive-tool response."""
+    if isinstance(content, str):
+        try:
+            return tool_entries(json.loads(content))
+        except ValueError:
+            return []
+    if isinstance(content, list):
+        return [entry for block in content for entry in tool_entries(block)]
+    if isinstance(content, dict):
+        return content.get('entries', []) if 'entries' in content else tool_entries(content.get('text'))
+    return []
+
+
 class LiveCalls:
     def __init__(self, binary, provider, model, limit, cwd, check_recall):
         if model not in (KIMI, MIMO):
@@ -206,7 +220,8 @@ def run_case(binary, provider, model, enabled, paired=False, check_recall=False)
                         if active == enabled: break
                         if time.monotonic() >= deadline: raise RuntimeError('Plugin did not activate')
                         time.sleep(.15)
-                    api('/api/experimental/session/import',history(root,model))
+                    sample = history(root,model)
+                    api('/api/experimental/session/import',sample)
                     route = '/api/session/ses_semantic'
                     def wait_for(predicate):
                         end = time.monotonic()+195
@@ -234,10 +249,19 @@ def run_case(binary, provider, model, enabled, paired=False, check_recall=False)
                     if check_recall:
                         reply = turn(ASK_SEAL)
                         final = calls.captured[-1]
-                        assert any(LABEL in str(m['content']) for m in final)
-                        returned = any(m['role']=='tool' and BASE['seal'] in str(m['content']) for m in final)
+                        first_request = calls.captured[1]  # index 0 is the locally supplied compact summary
+                        assert ASK_SEAL in str(first_request) and LABEL in str(first_request)
+                        assert BASE['seal'] not in str(first_request), 'Answer leaked before lookup'
+                        source = [r for r in sample['messages'] if r['type']=='user'][2]
+                        entries = [e for m in final if m['role']=='tool' and m.get('tool_call_id')=='call_archive'
+                                   for e in tool_entries(m['content'])]
+                        returned = [e for e in entries if e.get('n')==3 and e.get('id')==source['id']
+                                    and e.get('text')==source['text']]
+                        answer, correct = score(reply, {'seal':BASE['seal']})
                         print(json.dumps({'model':model,'calls':calls.calls,'recall':calls.tool_requests,
-                                          'tool_returned_seal':returned,'score':score(reply,{'seal':BASE['seal']})},ensure_ascii=False),flush=True)
+                                          'verified_entries':returned,'answer':answer},ensure_ascii=False),flush=True)
+                        assert calls.calls==2 and len(calls.tool_requests)==1 and returned and correct==['seal'], (
+                            'Expected a model-selected lookup, the original third entry in its result, and the correct answer')
                         return
                     expected = dict(BASE)
                     if model == KIMI:

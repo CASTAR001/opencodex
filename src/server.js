@@ -51,13 +51,16 @@ export default {
         editor.add({
           name: 'loop_recall',
           options: { codemode: false },
-          description: 'Read up to four earlier prompt excerpts from this session’s compaction history. endingAt is the last prompt number to include. Historical quotes yield to later changes.',
+          description: 'Read up to four earlier prompt excerpts through endingAt. Search for an exact phrase or separate keywords with spaces. If the phrase is absent, the best matches include matchedTerms. Verify the quoted text; later decisions take precedence.',
           input: { type: 'object', properties: { endingAt: { type: 'integer', minimum: 1 }, query: { type: 'string', maxLength: 160 } }, additionalProperties: false },
           execute: async (input, call) => {
             const state = await currentState(ctx, call.sessionID, journal)
             const entries = await recall(ctx.storage, call.sessionID, state, input.endingAt, input.query)
             const previousEndingAt = entries[0]?.n > 1 ? entries[0].n - 1 : undefined
-            return { content: JSON.stringify({ entries, previousEndingAt, partial: state?.gap ?? true }) }
+            const hint = state?.count && input.query?.trim() && !entries.length
+              ? '可缩短关键词，或略去 query 并用 endingAt 按提示编号向前查看。'
+              : undefined
+            return { content: JSON.stringify({ entries, previousEndingAt, partial: state?.gap ?? true, hint }) }
           },
         })
         editor.add({
