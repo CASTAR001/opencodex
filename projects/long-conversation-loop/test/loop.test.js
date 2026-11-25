@@ -55,6 +55,31 @@ test('many compactions retain a single objective, ordered amendments and paginat
   assert.match(messages[2].content[0].text,/现在只需要回答/)
 })
 
+test('recall finds the seal across archive pages with extra keywords, preserving stronger or exact matches', async () => {
+  const f = fixture()
+  const quote = '标签底纹样片在纸袋里。纸袋上的封签底纹编号为 S8Q-41。'
+  const rows = Array.from({ length: 24 }, (_, i) => prompt(i + 1, '观察记录'))
+  rows[2] = prompt(3, quote)
+  rows[3] = prompt(4, 'REVIEW seal')
+  for (let i = 16; i < 24; i++) rows[i] = prompt(i + 1, '此处仅有纸袋和编号，待复核 seal。')
+  await f.capture(rows, 'msg_keywords')
+  const state = await currentState(f.ctx, sessionID)
+  const find = (query, end) => recall(f.ctx.storage, sessionID, state, end, query)
+  const [match, ...others] = await find('纸袋 封签 底纹 编号 seal')
+  assert.deepEqual(others, [])
+  assert.equal(match?.n, 3)
+  assert.equal(match.text, quote)
+  assert.deepEqual(match.matchedTerms, ['纸袋', '封签', '底纹', '编号'])
+  assert.equal((await find('纸袋、编号，底纹；封签 SEAL seal seal'))[0].n, 3)
+  assert.deepEqual(await find('Review seal'), [{ n: 4, id: 'msg_u4', text: 'REVIEW seal' }])
+  assert.deepEqual((await find('s8q-41')).map(e => e.n), [3])
+  assert.deepEqual(await find('S8Q-99'), [])
+  assert.deepEqual(await find('纸袋 封签 底纹 编号 seal', 2), [])
+  assert.deepEqual((await find('纸袋 seal')).map(e => e.n), [21, 22, 23, 24])
+  assert.deepEqual((await find('纸袋 seal', 20)).map(e => e.n), [17, 18, 19, 20])
+  assert.deepEqual((await find('')).map(e => e.n), [21, 22, 23, 24])
+})
+
 test('only typed delivered user inputs qualify; tool receipts and progress have different provenance', async () => {
   const f = fixture()
   const fields = { constraints:['本人批准后才发'], superseded:['旧推送授权'], done:['本机单测完成'], next:['等验收'] }

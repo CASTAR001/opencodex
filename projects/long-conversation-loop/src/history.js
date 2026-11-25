@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 const PAGE_SIZE = 12
 const EXCERPT = 1600
 const TAIL = 6
+const RECALL_LIMIT = 4
 // Select extra verbatim quotations for the small reminder. Matching a word
 // never decides what is authorized, finished or superseded.
 const changeLanguage = /改为|改成|改用|更正|纠正|取消|撤回|撤销|暂缓|暂停|恢复|优先|仅限|只[能许做要]|等.{0,14}(?:验收|确认|同意)|不[要许再能]|先不|暂不|禁止|不用|必须|\b(?:instead|cancel|revoke|withdraw|pause|resume|only|never|must|approval|permission|correction|do not|don't|no longer)\b/iu
@@ -104,16 +105,35 @@ export async function recall(storage, session, state, endingAt, query = '') {
   if (!state?.count) return []
   const end = Math.min(endingAt ?? state.count, state.count)
   const needle = query.trim().toLowerCase()
-  const found = []
+  const terms = [...new Set(needle.split(/[\s,，、;；|]+/u).filter(Boolean))]
+  const exact = []
+  const candidates = []
+  let bestCount = 0
   for (let cursor = state.head; cursor;) {
     const page = await storage.get(key(session, 'page', cursor))
     if (!page) break
-    const matches = page.entries.filter(entry => entry.n <= end && (!needle || entry.text.toLowerCase().includes(needle)))
-    found.unshift(...matches.slice(-(4 - found.length)))
-    if (found.length === 4) break
+    // Scan newest first. An exact phrase in an older page outranks every keyword candidate.
+    for (let i = page.entries.length - 1; i >= 0; i--) {
+      const entry = page.entries[i]
+      if (entry.n > end) continue
+      const text = entry.text.toLowerCase()
+      if (!needle || text.includes(needle)) {
+        exact.push(entry)
+        if (exact.length === RECALL_LIMIT) return exact.reverse()
+        continue
+      }
+      if (exact.length || terms.length < 2) continue
+      const matchedTerms = terms.filter(term => text.includes(term))
+      if (!matchedTerms.length || matchedTerms.length < bestCount) continue
+      if (matchedTerms.length > bestCount) {
+        candidates.length = 0
+        bestCount = matchedTerms.length
+      }
+      if (candidates.length < RECALL_LIMIT) candidates.push({ ...entry, matchedTerms })
+    }
     cursor = page.previous
   }
-  return found
+  return (exact.length ? exact : candidates).reverse()
 }
 
 export function reminder(state) {

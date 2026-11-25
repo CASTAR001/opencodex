@@ -25,7 +25,7 @@
 | 11 | [项目文件夹整理](projects/project-sidebar/README.md) | **已弃用** · 最后版本 `0.1.0-alpha.3`。侧边标签页使用 OpenCode 原生项目分组 |
 | 12 | [插件中文名称](projects/plugin-labels-zh/README.md) | `0.1.2` · 扩展列表默认显示中文，包含「对话文件右栏临时修复」。悬停名称可查看原插件 ID |
 | 13 | [对话文件右栏临时修复](projects/session-file-reveal/README.md) | `0.1.0` · 点击回复中的本地文件时展开右栏。仅在 Desktop 2.3.2 启用，已在 macOS 验收 |
-| 14 | [长对话稳定性增强](projects/long-conversation-loop/README.md) | `0.1.0-alpha.1` · 同一任务多次压缩后，恢复目标、追加要求和进度。macOS 2.4.0 隔离后台验证 |
+| 14 | [长对话稳定性增强](projects/long-conversation-loop/README.md) | `0.1.0-alpha.2` · 多次压缩后恢复目标、追加要求和进度。支持原句与多关键词回查，已用 Kimi K3.1 Pro 验证 |
 
 ## 在 Windows 和 macOS 上安装
 
