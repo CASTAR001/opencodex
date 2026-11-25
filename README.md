@@ -87,3 +87,9 @@ python3 -B test/live_models.py kimi-control --provider '你的服务商ID' --liv
 ```sh
 python3 -B test/native_cache.py --model k3.1-pro --provider '你的服务商ID' --live
 ```
+
+### 一次真实研究会话的自然压缩
+
+2026-11-26，在 macOS 的 OpenCode 2.4.0 中，Kimi K3.1 Pro 主持了一次长程插件审核，Kimi 和 MiMo Flash 分别承担子任务。主会话记录了一次已完成的原生自动压缩。压缩前最后一个模型步骤计量为 887,398 token，压缩后第一个步骤为 39,830 token。这两个读数是相邻步骤的观测值，触发判断还会计入其后新增内容的估算。
+
+压缩后，仅给出两条早期追加要求的主题，请模型找回序号、消息 ID 和全文。两条都早于宿主保留的尾段，原生摘要也没有收录它们的全文或 ID。Kimi 自行调用 `loop_recall`，最终回答与第 2、4 条原始输入逐字一致。一次宽泛搜索返回了其他消息，更具体的查询找到了目标。本次只验证了 Kimi 主会话的一次自然压缩；跨多次压缩的恢复率及关闭插件时的差异仍待实测。
