@@ -23,3 +23,14 @@ jobs:
           python-version: '3.14'
       - run: npm test
       - run: npm pack --dry-run
+      - name: Compare bundled core with the immutable reference
+        if: runner.os == 'Linux'
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          from urllib.request import urlopen
+          pin = json.loads(Path("exchange/upstream.json").read_text())
+          url = f"https://raw.githubusercontent.com/CASTAR001/codex-sci-loop/{pin['revision']}/{pin['path']}"
+          with urlopen(url, timeout=20) as response:
+              assert response.read() == Path("exchange/exchange.py").read_bytes()
