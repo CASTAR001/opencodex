@@ -4,6 +4,8 @@ import { capture, attach, currentState } from './window.js'
 import { recall, progressInput, sessionPrefix } from './history.js'
 import { deliveryEvents, deliveryLog } from './delivery.js'
 
+import { exchangeAdapter } from './exchange.js'
+
 const skillURL = new URL('../skills/long-conversation-loop/SKILL.md', import.meta.url)
 const id = 'long-conversation-loop'
 
@@ -12,6 +14,7 @@ export default {
   async setup(ctx) {
     const registrations = []
     const recent = new Map()
+    const exchange = exchangeAdapter(ctx)
     const journal = deliveryLog()
     const controller = new AbortController()
     const report = () => console.warn('[long-conversation-loop] 会话记录暂不可用，继续使用原生上下文。')
@@ -26,6 +29,7 @@ export default {
         if (event.type === 'session.compaction.started') return capture(ctx, session, undefined, journal)
         if (event.type === 'session.compaction.ended') return currentState(ctx, session, journal)
         if (event.type !== 'session.deleted') return
+        exchange.forget(session)
         const prefix = sessionPrefix(session)
         for (const k of recent.keys()) if (k.startsWith(prefix)) recent.delete(k)
         let page
@@ -46,8 +50,12 @@ export default {
     }
     try {
       registrations.push(await ctx.session.hook('compaction', guarded(e => capture(ctx, e.sessionID, e.messages, journal))))
-      registrations.push(await ctx.session.hook('context', guarded(e => attach(ctx, e, recent, journal))))
+      registrations.push(await ctx.session.hook('context', guarded(async event => {
+        const adopted = await attach(ctx, event, recent, journal)
+        await exchange.context(event, adopted)
+      })))
       registrations.push(await ctx.tool.transform(editor => {
+        editor.add(exchange.tool)
         editor.add({
           name: 'loop_recall',
           options: { codemode: false },
@@ -69,7 +77,7 @@ export default {
           input: progressInput,
           // The successful tool call itself is the durable, revert-aware record.
           // Capture it with its original position only when compacting this window.
-          execute: async () => ({ content: '已记入本轮会话。' }),
+          execute: async (progress, call) => ({ content: await exchange.checkpoint(call.sessionID, progress) }),
         })
       }))
       const [, description, content] = /^---\r?\nname: long-conversation-loop\r?\ndescription: (.+)\r?\n---\r?\n([\s\S]+)$/.exec(readFileSync(skillURL, 'utf8'))

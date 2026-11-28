@@ -44,6 +44,7 @@ export async function attach(ctx, event, recent, journal) {
   const found = markerOf(event.messages)
   if (!found) return
   const cacheKey = key(event.sessionID, 'view', found.id)
+  let adopted = found.id
   let note = found.id && recent.get(cacheKey)
   let insertAt = found.index + 1
   if (!note) {
@@ -61,15 +62,17 @@ export async function attach(ctx, event, recent, journal) {
         JSON.stringify(m.content) === JSON.stringify(event.messages[i].content))) return
       insertAt = native.length
     }
+    adopted = marker.id
     const state = await readBoundary(ctx.storage, event.sessionID, marker, journal)
     if (found.id && state?.gap) insertAt = found.index
     note = reminder(state)
-    if (!note) return
+    if (!note) return adopted
     if (found.id && !state.gap) {
       if (recent.size >= 64) recent.delete(recent.keys().next().value)
       recent.set(cacheKey, note)
     }
   }
-  if ([event.messages[insertAt], event.messages[insertAt - 1]].some(m => m?.content?.[0]?.text === note)) return
+  if ([event.messages[insertAt], event.messages[insertAt - 1]].some(m => m?.content?.[0]?.text === note)) return adopted
   event.messages.splice(insertAt, 0, { role: 'user', content: [{ type: 'text', text: note }] })
+  return adopted
 }
