@@ -18,20 +18,29 @@ from host_probe import Model, backend, eventually, fixture_environment
 def native_codex(repo, root, workspace):
     # This optional integration test takes an explicit reference checkout.
     # Production plugins never load code from the other client.
-    sys.path.insert(0,str(repo/"tests"))
-    from test_native_exchange import AppServer, config_for, execute_exchange, install_fixture, responses_fixture
+    sys.path.insert(0, str(repo / "tests"))
+    from test_native_exchange import (
+        AppServer,
+        config_for,
+        execute_exchange,
+        install_fixture,
+        responses_fixture,
+    )
+
     root.mkdir()
     workspace.mkdir(exist_ok=True)
     with responses_fixture() as provider:
-        env,config=config_for(root,provider)
-        config.write_text(config.read_text().replace('sandbox_mode = "read-only"', 'sandbox_mode = "workspace-write"'))
-        exe=shutil.which("codex")
-        installed=install_fixture(exe,root,env)
-        cmd=[sys.executable,"-IB",str(installed/"scripts/exchange.py")]
-        with AppServer(exe,workspace,env) as host:
+        env, config = config_for(root, provider)
+        config.write_text(
+            config.read_text().replace('sandbox_mode = "read-only"', 'sandbox_mode = "workspace-write"')
+        )
+        exe = shutil.which("codex")
+        installed = install_fixture(exe, root, env)
+        cmd = [sys.executable, "-IB", str(installed / "scripts/exchange.py")]
+        with AppServer(exe, workspace, env) as host:
             host.initialize()
-            sid=host.call("thread/start",cwd=str(workspace))["thread"]["id"]
-            yield lambda req:execute_exchange(host,sid,provider,cmd,req)
+            sid = host.call("thread/start", cwd=str(workspace))["thread"]["id"]
+            yield lambda req: execute_exchange(host, sid, provider, cmd, req)
 
 
 def run(binary, root, model, codex_script=None, native_peer=None):
@@ -118,11 +127,15 @@ def run(binary, root, model, codex_script=None, native_peer=None):
             },
         )
     with backend(binary, root, env) as api:
-        route="/api/session/"+ids["main"]
-        api(route+"/compact",{"id":"msg_exchange_compact"})
-        eventually(lambda:api(route+"/context"), lambda rows:any(
-            row.get("type")=="compaction" and row.get("status")=="completed" for row in rows))
-        before=len(model.requests)
+        route = "/api/session/" + ids["main"]
+        api(route + "/compact", {"id": "msg_exchange_compact"})
+        eventually(
+            lambda: api(route + "/context"),
+            lambda rows: any(
+                row.get("type") == "compaction" and row.get("status") == "completed" for row in rows
+            ),
+        )
+        before = len(model.requests)
         stale = op(
             api,
             "main",
@@ -137,7 +150,7 @@ def run(binary, root, model, codex_script=None, native_peer=None):
             True,
         )
         assert "stale" in stale["error"]
-        requests=[m for compact,m in model.requests[before:] if not compact]
+        requests = [m for compact, m in model.requests[before:] if not compact]
         assert any("【协作收件箱】" in str(m) for m in requests[0]), "missing adopted-compaction reminder"
         assert not any("【协作收件箱】" in str(m) for m in requests[-1]), "repeated reminder during tool loop"
         page = op(api, "main", {"op": "sync", "peer": "build"})
@@ -182,15 +195,23 @@ def run(binary, root, model, codex_script=None, native_peer=None):
         "Real OpenCode tools, three native sessions, backend restart, stale write rejection and independent receipts passed."
     )
     if codex_script or native_peer:
-        print("Round trip with the real Codex app-server shell tool passed." if native_peer else "Round trip with the packaged Codex CLI passed.")
+        print(
+            "Round trip with the real Codex app-server shell tool passed."
+            if native_peer
+            else "Round trip with the packaged Codex CLI passed."
+        )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("binary", type=Path)
-    peers=parser.add_mutually_exclusive_group()
+    peers = parser.add_mutually_exclusive_group()
     peers.add_argument("--codex-script", type=Path)
-    peers.add_argument("--codex-source", type=Path, help="exercise the real Codex app-server, using fixtures from the reference checkout")
+    peers.add_argument(
+        "--codex-source",
+        type=Path,
+        help="exercise the real Codex app-server, using fixtures from the reference checkout",
+    )
     args = parser.parse_args()
     with (
         tempfile.TemporaryDirectory(prefix="exchange-host-") as tmp,
@@ -200,9 +221,19 @@ if __name__ == "__main__":
         model.hold = model.pressure = False
         threading.Thread(target=model.serve_forever, daemon=True).start()
         try:
-            root=Path(tmp).resolve()
-            session=native_codex(args.codex_source.resolve(), root/"codex-fixture", root/"workspace") if args.codex_source else nullcontext()
+            root = Path(tmp).resolve()
+            session = (
+                native_codex(args.codex_source.resolve(), root / "codex-fixture", root / "workspace")
+                if args.codex_source
+                else nullcontext()
+            )
             with session as peer:
-                run(args.binary.resolve(),root,model,args.codex_script.resolve() if args.codex_script else None,peer)
+                run(
+                    args.binary.resolve(),
+                    root,
+                    model,
+                    args.codex_script.resolve() if args.codex_script else None,
+                    peer,
+                )
         finally:
             model.shutdown()
