@@ -50,6 +50,8 @@ class Model(BaseHTTPRequestHandler):
         if not compact and messages[-1]['role'] == 'user':
             if messages[-1]['content'] == 'SAVE_PROGRESS':
                 tool = ('loop_checkpoint', {'constraints': ['await approval'], 'done': ['SHELF_PROOF_52'], 'next': ['review'], 'superseded': ['publish immediately']})
+            if isinstance(messages[-1]['content'], str) and messages[-1]['content'].startswith('MAILBOX '):
+                tool = ('loop_exchange', json.loads(messages[-1]['content'][8:]))
             if messages[-1]['content'] == 'FETCH_EARLY':
                 tool = ('loop_recall', {'endingAt': 2, 'query': 'CANCEL_PUSH_81'})
         if tool:
@@ -106,7 +108,7 @@ def eventually(read, condition):
     raise AssertionError('Timed out: ' + str(value)[-850:])
 
 
-def run(binary, model, root, enabled, background=False, package=PACKAGE):
+def fixture_environment(model, root, enabled, background=False, package=PACKAGE):
     for name in ('workspace', 'home', 'tmp', 'config/opencode', 'cache', 'runtime'):
         (root/name).mkdir(parents=True, exist_ok=True)
     env = {'PATH': os.defpath, 'HOME': str(root/'home'), 'TMPDIR': str(root/'tmp'),
@@ -129,6 +131,11 @@ def run(binary, model, root, enabled, background=False, package=PACKAGE):
     if background:
         del config['compaction']['keep']  # exercise the runner's default retention window, too
     (root/'config/opencode/opencode.json').write_text(json.dumps(config))
+    return env
+
+
+def run(binary, model, root, enabled, background=False, package=PACKAGE):
+    env = fixture_environment(model, root, enabled, background, package)
     sid = 'ses_loop_probe'
     route = '/api/session/' + sid
     def context():

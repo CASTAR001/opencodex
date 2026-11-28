@@ -1,0 +1,7 @@
+{
+  "protocol": 1,
+  "repository": "https://github.com/CASTAR001/codex-sci-loop",
+  "revision": "8fe3f0825780b3c024be83d706d7835477964c57",
+  "path": "plugins/codex-sci-loop/scripts/exchange.py",
+  "sha256": "606bf913399f32d13244cdf8ac0214240ff9ae01069c8a351776e8a74e92053d"
+}
